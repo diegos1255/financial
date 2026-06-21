@@ -1,0 +1,158 @@
+# ============================================
+# Secrets — NUNCA commitar
+# ============================================
+.env
+.env.*
+!.env.example
+!.env.development
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.crt
+secrets/
+credentials/
+config/secrets.yml
+
+# ============================================
+# Java / Maven
+# ============================================
+target/
+**/target/
+*.jar
+*.war
+*.ear
+*.class
+hs_err_pid*
+replay_pid*
+.mvn/wrapper/maven-wrapper.jar
+
+# ============================================
+# Node / Vite / TypeScript
+# ============================================
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
+.vite/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
+
+# ============================================
+# Build outputs
+# ============================================
+build/
+out/
+bin/
+tsconfig.tsbuildinfo
+**/tsconfig.tsbuildinfo
+
+# ============================================
+# Eclipse
+# ============================================
+.metadata/
+**/.metadata/
+.recommenders/
+.classpath
+**/.classpath
+.project
+**/.project
+.settings/
+**/.settings/
+.factorypath
+.apt_generated/
+.springBeans
+.sts4-cache/
+
+# ============================================
+# IntelliJ IDEA
+# ============================================
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ============================================
+# VS Code
+# ============================================
+.vscode/
+*.code-workspace
+
+# ============================================
+# OS — Windows
+# ============================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ============================================
+# OS — macOS
+# ============================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ============================================
+# OS — Linux
+# ============================================
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ============================================
+# Logs
+# ============================================
+*.log
+logs/
+**/logs/
+
+# ============================================
+# Docker
+# ============================================
+.docker-volumes/
+docker-compose.override.yml
+
+# ============================================
+# Cobertura / Testes
+# ============================================
+coverage/
+.nyc_output/
+*.lcov
+.scannerwork/
+surefire-reports/
+failsafe-reports/
+
+# ============================================
+# Claude Code (memory local — não vai pro git)
+# ============================================
+.claude/
+
+# ============================================
+# Diversos / temporários
+# ============================================
+*.tmp
+*.bak
+*.swp
+*.swo
+*.orig
+*.rej
+.cache/
+
+# ============================================
+# Prints / screenshots de troubleshooting (raiz)
+# ============================================
+/*.png
+/*.jpg
+/*.jpeg
+/*.gif

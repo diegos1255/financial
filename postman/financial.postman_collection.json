@@ -1,0 +1,678 @@
+{
+  "info": {
+    "_postman_id": "a3f8b1c2-9d4e-4f7a-8e2b-1a2b3c4d5e6f",
+    "name": "Financial — Backend API",
+    "description": "Collection consolidada do backend do projeto financial (workspace D:\\claude\\financial). Cobre todos os 22 endpoints REST do MVP. Use o environment 'Financial — Local' junto. O POST /api/auth/login tem um script que salva o token automaticamente em {{token}} — rode-o primeiro e todas as outras requests vão funcionar.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {"key": "token", "value": "{{token}}", "type": "string"}
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Login. O script de Tests salva automaticamente {{token}} e {{userId}} no environment após sucesso.",
+      "item": [
+        {
+          "name": "POST Login (diego)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.token) {",
+                  "        pm.environment.set('token', body.token);",
+                  "        console.log('Token salvo no environment.');",
+                  "    }",
+                  "    if (body.user && body.user.id) {",
+                  "        pm.environment.set('userId', body.user.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"diego\",\n  \"password\": \"Diego#2026\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Recebe {login, password} e devolve {token, user}. O Test script salva token e userId automaticamente no environment."
+          }
+        },
+        {
+          "name": "POST Login (bia)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.token) pm.environment.set('token', body.token);",
+                  "    if (body.user && body.user.id) pm.environment.set('userId', body.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"bia\",\n  \"password\": \"Bia#2026\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login alternativo como Bia — útil pra testar isolamento multi-user (Bia não deve ver dados do Diego e vice-versa)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "GET /me",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me"]
+            },
+            "description": "Retorna dados do usuário logado (id, name, login, photoUrl, active)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorias",
+      "description": "CRUD de ExpenseCategory. Soft-delete via DELETE (vira active=false). Nome único por usuário (case-insensitive).",
+      "item": [
+        {
+          "name": "GET list",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/categories?includeInactive=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories"],
+              "query": [
+                {"key": "includeInactive", "value": "false", "description": "default=false. true traz também as soft-deletadas."}
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET by id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST create",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) pm.environment.set('categoryId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mercado\",\n  \"description\": \"Compras de supermercado\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories"]
+            },
+            "description": "Cria categoria. Test script salva {{categoryId}}. Nome duplicado → 409 CONFLICT."
+          }
+        },
+        {
+          "name": "PUT update",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mercado\",\n  \"description\": \"Atualizada\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE (soft)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            },
+            "description": "Soft-delete: marca active=false. Devolve 204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contas Bancárias",
+      "description": "CRUD de BankAccount. Soft-delete. Não exige unicidade de nome.",
+      "item": [
+        {
+          "name": "GET list",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/bank-accounts?includeInactive=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bank-accounts"],
+              "query": [
+                {"key": "includeInactive", "value": "false"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET by id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/bank-accounts/{{bankAccountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bank-accounts", "{{bankAccountId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST create",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) pm.environment.set('bankAccountId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Itaú PF\",\n  \"description\": \"Conta corrente principal\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bank-accounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bank-accounts"]
+            }
+          }
+        },
+        {
+          "name": "PUT update",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Itaú PF\",\n  \"description\": \"Atualizada\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bank-accounts/{{bankAccountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bank-accounts", "{{bankAccountId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE (soft)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/bank-accounts/{{bankAccountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bank-accounts", "{{bankAccountId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Investimentos",
+      "description": "CRUD de Investment. Soft-delete. Ticker normalizado pra uppercase. UNIQUE(user, ticker).",
+      "item": [
+        {
+          "name": "GET list",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/investments?includeInactive=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "investments"],
+              "query": [
+                {"key": "includeInactive", "value": "false"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET by id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/{{investmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "investments", "{{investmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST create",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) pm.environment.set('investmentId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticker\": \"PETR4\",\n  \"quantity\": 100,\n  \"unitPrice\": 35.50,\n  \"description\": \"Compra inicial\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/investments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "investments"]
+            }
+          }
+        },
+        {
+          "name": "PUT update",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticker\": \"PETR4\",\n  \"quantity\": 150,\n  \"unitPrice\": 36.00,\n  \"description\": \"Aumento de posição\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/{{investmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "investments", "{{investmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE (soft)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/{{investmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "investments", "{{investmentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Salários",
+      "description": "CRUD de Salary com UNIQUE(user, year, month). DELETE é HARD (sem campo active). Filtros opcionais no GET list.",
+      "item": [
+        {
+          "name": "GET list (filtros opcionais)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/salaries?year=2026&month=7",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "salaries"],
+              "query": [
+                {"key": "year", "value": "2026", "disabled": true, "description": "filtro opcional"},
+                {"key": "month", "value": "7", "disabled": true, "description": "filtro opcional"},
+                {"key": "bankAccountId", "value": "{{bankAccountId}}", "disabled": true, "description": "filtro opcional"}
+              ]
+            },
+            "description": "Lista ordenada por (year DESC, month DESC). Filtros combináveis."
+          }
+        },
+        {
+          "name": "GET by id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/salaries/{{salaryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "salaries", "{{salaryId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST create",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) pm.environment.set('salaryId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bankAccountId\": \"{{bankAccountId}}\",\n  \"referenceYear\": 2026,\n  \"referenceMonth\": 7,\n  \"amount\": 5000.00,\n  \"description\": \"Salário CLT\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/salaries",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "salaries"]
+            },
+            "description": "Duplicidade de (year, month) → 409 DUPLICATE_SALARY."
+          }
+        },
+        {
+          "name": "PUT update",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bankAccountId\": \"{{bankAccountId}}\",\n  \"referenceYear\": 2026,\n  \"referenceMonth\": 7,\n  \"amount\": 5500.00,\n  \"description\": \"Ajuste salarial\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/salaries/{{salaryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "salaries", "{{salaryId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE (hard)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/salaries/{{salaryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "salaries", "{{salaryId}}"]
+            },
+            "description": "Hard delete — única exceção à regra de soft-delete. Schema não tem campo active."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Despesas",
+      "description": "Expense FIXED ou INSTALLMENT. INSTALLMENT gera parcelas automáticas. Cancelamento via POST /{id}/cancel (cascata em parcelas PENDING). Update LIMITADO a description/categoryId/bankAccountId.",
+      "item": [
+        {
+          "name": "GET list (filtros opcionais)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses"],
+              "query": [
+                {"key": "year", "value": "2026", "disabled": true, "description": "combina com month: traz FIXED ativas no mês + INSTALLMENT com parcela no mês"},
+                {"key": "month", "value": "7", "disabled": true},
+                {"key": "status", "value": "ACTIVE", "disabled": true, "description": "ACTIVE ou CANCELLED"},
+                {"key": "categoryId", "value": "{{categoryId}}", "disabled": true},
+                {"key": "bankAccountId", "value": "{{bankAccountId}}", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET by id (com installments[])",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses/{{expenseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses", "{{expenseId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /{id}/installments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses/{{expenseId}}/installments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses", "{{expenseId}}", "installments"]
+            }
+          }
+        },
+        {
+          "name": "POST create FIXED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) pm.environment.set('expenseId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Netflix mensal\",\n  \"totalAmount\": 50.00,\n  \"expenseType\": \"FIXED\",\n  \"purchaseDate\": \"2026-06-01\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"bankAccountId\": \"{{bankAccountId}}\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses"]
+            },
+            "description": "FIXED não aceita installmentsCount → 422 INVALID_EXPENSE_TYPE se enviado."
+          }
+        },
+        {
+          "name": "POST create INSTALLMENT (10x)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) pm.environment.set('expenseId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Geladeira Brastemp\",\n  \"totalAmount\": 1000.00,\n  \"expenseType\": \"INSTALLMENT\",\n  \"installmentsCount\": 10,\n  \"purchaseDate\": \"2026-06-15\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"bankAccountId\": \"{{bankAccountId}}\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses"]
+            },
+            "description": "Gera 10 parcelas automaticamente (R$100 cada, dueDate jul/2026 a abr/2027). INSTALLMENT sem installmentsCount → 422."
+          }
+        },
+        {
+          "name": "PUT update (description/cat/bank)",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Netflix premium\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"bankAccountId\": \"{{bankAccountId}}\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses/{{expenseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses", "{{expenseId}}"]
+            },
+            "description": "PUT só altera 3 campos. Type/total/parcelas exigem cancelar + recriar."
+          }
+        },
+        {
+          "name": "POST /{id}/cancel",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses/{{expenseId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses", "{{expenseId}}", "cancel"]
+            },
+            "description": "Marca expense=CANCELLED + parcelas PENDING viram CANCELLED (PAID/ANTICIPATED ficam). 204. Recancel → 422 EXPENSE_CANCELLATION."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Menus",
+      "item": [
+        {
+          "name": "GET /api/menus",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/menus",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "menus"]
+            },
+            "description": "Lista hierárquica (com children[]) de menus active, ordenada por sortOrder. Mesma resposta pra todos os usuários (menus globais)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboards",
+      "description": "Agregações. Sem year/month → mês corrente.",
+      "item": [
+        {
+          "name": "GET /balance",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/balance?year=2026&month=7",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "balance"],
+              "query": [
+                {"key": "year", "value": "2026"},
+                {"key": "month", "value": "7"}
+              ]
+            },
+            "description": "Retorna {year, month, salary, totalExpenses, balance, breakdown: {fixed, installments}}. Fórmula: salary - FIXED(active, purchase<=fim_mes) - SUM(installments com dueDate no mês e status != CANCELLED)."
+          }
+        },
+        {
+          "name": "GET /expenses-by-category",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/expenses-by-category?year=2026&month=7",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "expenses-by-category"],
+              "query": [
+                {"key": "year", "value": "2026"},
+                {"key": "month", "value": "7"}
+              ]
+            },
+            "description": "Agregação pra pizza. Lista [{categoryId, categoryName, total}] ordenada por total DESC."
+          }
+        }
+      ]
+    }
+  ]
+}
