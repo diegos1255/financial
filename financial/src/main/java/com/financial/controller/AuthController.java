@@ -4,6 +4,7 @@ import com.financial.dto.LoginRequest;
 import com.financial.dto.LoginResponse;
 import com.financial.dto.SignupRequest;
 import com.financial.dto.UserResponse;
+import com.financial.exception.InvalidPhotoException;
 import com.financial.exception.LoginAlreadyExistsException;
 import com.financial.model.User;
 import com.financial.repository.UserRepository;
@@ -11,12 +12,17 @@ import com.financial.security.config.JwtProperties;
 import com.financial.security.jwt.JwtAuthenticationFilter;
 import com.financial.security.jwt.JwtProvider;
 import com.financial.security.logging.SuspiciousActivityLogger;
+import com.financial.service.PhotoStorageService;
 import com.financial.service.RefreshTokenService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
+import jakarta.validation.Validator;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,13 +34,18 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -47,6 +58,8 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final SuspiciousActivityLogger suspiciousLogger;
     private final RefreshTokenService refreshTokenService;
+    private final PhotoStorageService photoStorageService;
+    private final Validator validator;
 
     public AuthController(AuthenticationManager authenticationManager,
                           JwtProvider jwtProvider,
@@ -54,7 +67,9 @@ public class AuthController {
                           UserRepository userRepository,
                           PasswordEncoder passwordEncoder,
                           SuspiciousActivityLogger suspiciousLogger,
-                          RefreshTokenService refreshTokenService) {
+                          RefreshTokenService refreshTokenService,
+                          PhotoStorageService photoStorageService,
+                          Validator validator) {
         this.authenticationManager = authenticationManager;
         this.jwtProvider = jwtProvider;
         this.jwtProperties = jwtProperties;
@@ -62,6 +77,8 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
         this.suspiciousLogger = suspiciousLogger;
         this.refreshTokenService = refreshTokenService;
+        this.photoStorageService = photoStorageService;
+        this.validator = validator;
     }
 
     @PostMapping("/login")
@@ -92,9 +109,23 @@ public class AuthController {
                 .body(new LoginResponse(UserResponse.from(user)));
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity<LoginResponse> signup(@RequestBody @Valid SignupRequest request,
+    @PostMapping(value = "/signup", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Transactional
+    public ResponseEntity<LoginResponse> signup(@RequestParam("name") String name,
+                                                @RequestParam("login") String login,
+                                                @RequestParam("password") String password,
+                                                @RequestPart(value = "file", required = false) MultipartFile file,
                                                 HttpServletRequest httpRequest) {
+        SignupRequest request = new SignupRequest(name, login, password);
+        Set<ConstraintViolation<SignupRequest>> violations = validator.validate(request);
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
+        }
+
+        if (file != null && !file.isEmpty()) {
+            validatePhoto(file);
+        }
+
         if (userRepository.findByLogin(request.login()).isPresent()) {
             suspiciousLogger.logDuplicateSignup(getClientIp(httpRequest), request.login());
             throw new LoginAlreadyExistsException(request.login());
@@ -108,6 +139,12 @@ public class AuthController {
                 .build();
         userRepository.save(user);
 
+        if (file != null && !file.isEmpty()) {
+            String url = photoStorageService.upload(user.getId(), file);
+            user.setPhotoUrl(url);
+            userRepository.save(user);
+        }
+
         UserDetails principal = new org.springframework.security.core.userdetails.User(
                 user.getLogin(), user.getPassword(),
                 List.of(new SimpleGrantedAuthority("ROLE_USER"))
@@ -119,6 +156,16 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, buildAuthCookie(jwt, jwtProvider.getExpirationSeconds()).toString())
                 .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(rt.rawToken(), rt.maxAgeSeconds()).toString())
                 .body(new LoginResponse(UserResponse.from(user)));
+    }
+
+    private void validatePhoto(MultipartFile file) {
+        String contentType = file.getContentType();
+        if (contentType == null || (!contentType.equals("image/jpeg") && !contentType.equals("image/png"))) {
+            throw new InvalidPhotoException("Somente JPG e PNG são aceitos");
+        }
+        if (file.getSize() > 2L * 1024 * 1024) {
+            throw new InvalidPhotoException("Foto deve ter no máximo 2MB");
+        }
     }
 
     @PostMapping("/refresh")

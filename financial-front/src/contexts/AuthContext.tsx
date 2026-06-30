@@ -12,7 +12,7 @@ export type AuthContextValue = {
   isAuthenticated: boolean;
   bootstrapping: boolean;
   login: (payload: LoginRequest) => Promise<void>;
-  signup: (payload: SignupRequest) => Promise<void>;
+  signup: (payload: SignupRequest, photo: File | null) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User) => void;
 };
@@ -55,8 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(result.user);
   }, []);
 
-  const signup = useCallback(async (payload: SignupRequest) => {
-    const result = await authService.signup(payload);
+  const signup = useCallback(async (payload: SignupRequest, photo: File | null) => {
+    const result = await authService.signup(payload, photo);
     setUser(result.user);
   }, []);
 

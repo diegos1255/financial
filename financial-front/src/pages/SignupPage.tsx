@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, Wallet } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { authService } from '../services/authService';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { ImageUploader } from '../components/ui/ImageUploader';
@@ -10,7 +9,7 @@ import type { ApiError } from '../types/user';
 
 export function SignupPage() {
   const navigate = useNavigate();
-  const { signup, setUser } = useAuth();
+  const { signup } = useAuth();
 
   const [name, setName] = useState('');
   const [loginValue, setLoginValue] = useState('');
@@ -27,17 +26,7 @@ export function SignupPage() {
     setSubmitting(true);
 
     try {
-      await signup({ name: name.trim(), login: loginValue.trim(), password });
-
-      if (photo) {
-        try {
-          const updatedUser = await authService.uploadPhoto(photo);
-          setUser(updatedUser);
-        } catch {
-          // foto opcional — ignora falha aqui
-        }
-      }
-
+      await signup({ name: name.trim(), login: loginValue.trim(), password }, photo);
       navigate('/dashboard', { replace: true });
     } catch (err) {
       const apiError = (err as { response?: { data?: ApiError } }).response?.data;

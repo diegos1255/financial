@@ -7,8 +7,13 @@ export const authService = {
     return data;
   },
 
-  async signup(payload: SignupRequest): Promise<LoginResponse> {
-    const { data } = await api.post<LoginResponse>('/api/auth/signup', payload);
+  async signup(payload: SignupRequest, photo: File | null): Promise<LoginResponse> {
+    const form = new FormData();
+    form.append('name', payload.name);
+    form.append('login', payload.login);
+    form.append('password', payload.password);
+    if (photo) form.append('file', photo);
+    const { data } = await api.post<LoginResponse>('/api/auth/signup', form);
     return data;
   },
 

@@ -11,6 +11,9 @@ import com.financial.exception.InvalidPhotoException;
 import com.financial.exception.LoginAlreadyExistsException;
 import com.financial.exception.ResourceConflictException;
 import com.financial.exception.ResourceNotFoundException;
+import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -24,6 +27,8 @@ import java.util.List;
 
 @RestControllerAdvice
 public class ApiErrorHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(ApiErrorHandler.class);
 
     @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
     public ResponseEntity<ApiError> handleBadCredentials(RuntimeException e) {
@@ -112,8 +117,23 @@ public class ApiErrorHandler {
                 .body(ApiError.withFields(400, "INVALID_PAYLOAD", "Payload inválido", fields));
     }
 
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiError> handleConstraintViolation(ConstraintViolationException e) {
+        List<ApiError.FieldError> fields = e.getConstraintViolations().stream()
+                .map(v -> {
+                    String path = v.getPropertyPath().toString();
+                    int dot = path.lastIndexOf('.');
+                    String field = dot >= 0 ? path.substring(dot + 1) : path;
+                    return new ApiError.FieldError(field, v.getMessage());
+                })
+                .toList();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.withFields(400, "INVALID_PAYLOAD", "Payload inválido", fields));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception e) {
+        log.error("Unhandled exception", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiError.of(500, "INTERNAL_ERROR", "Erro interno"));
     }
