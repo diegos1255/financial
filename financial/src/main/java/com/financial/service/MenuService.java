@@ -3,6 +3,7 @@ package com.financial.service;
 import com.financial.dto.MenuResponse;
 import com.financial.model.Menu;
 import com.financial.repository.MenuRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,14 +18,19 @@ import java.util.UUID;
 public class MenuService {
 
     private final MenuRepository repository;
+    private final boolean investmentsEnabled;
 
-    public MenuService(MenuRepository repository) {
+    public MenuService(MenuRepository repository,
+                       @Value("${features.investments-enabled:true}") boolean investmentsEnabled) {
         this.repository = repository;
+        this.investmentsEnabled = investmentsEnabled;
     }
 
     @Transactional(readOnly = true)
     public List<MenuResponse> tree() {
-        List<Menu> all = repository.findAllByActiveTrueOrderBySortOrderAsc();
+        List<Menu> all = repository.findAllByActiveTrueOrderBySortOrderAsc().stream()
+                .filter(m -> investmentsEnabled || !"/investments".equals(m.getRoute()))
+                .toList();
 
         Map<UUID, List<MenuResponse>> childrenByParentId = new HashMap<>();
         List<MenuResponse> roots = new ArrayList<>();

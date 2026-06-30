@@ -22,6 +22,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 
@@ -40,6 +41,12 @@ public class ApiErrorHandler {
     public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiError.of(404, "NOT_FOUND", e.getMessage()));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleNoResource(NoResourceFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiError.of(404, "NOT_FOUND", "Recurso não encontrado"));
     }
 
     @ExceptionHandler(ResourceConflictException.class)

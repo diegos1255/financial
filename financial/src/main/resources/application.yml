@@ -58,6 +58,9 @@ brapi:
 market-price:
   ttl-hours: ${MARKET_PRICE_TTL_HOURS:24}
 
+features:
+  investments-enabled: ${FEATURES_INVESTMENTS_ENABLED:true}
+
 logging:
   level:
     com.financial: DEBUG

@@ -7,6 +7,7 @@ import com.financial.dto.InvestmentResponse;
 import com.financial.dto.PageResponse;
 import com.financial.service.InvestmentService;
 import jakarta.validation.Valid;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,6 +27,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/investments")
+@ConditionalOnProperty(value = "features.investments-enabled", havingValue = "true", matchIfMissing = true)
 public class InvestmentController {
 
     private final InvestmentService service;

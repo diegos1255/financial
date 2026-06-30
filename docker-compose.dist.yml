@@ -1,3 +1,17 @@
+# Docker Compose para uso final (sem build).
+# Puxa as imagens publicadas no GitHub Container Registry.
+#
+# Como usar:
+#   1. Coloque este arquivo numa pasta vazia
+#   2. Baixe .env.example e renomeie como .env (ou crie o seu próprio)
+#      https://raw.githubusercontent.com/diegos1255/financial/master/financial/.env.example
+#   3. Edite o .env: troque pelo menos POSTGRES_PASSWORD, MINIO_ROOT_PASSWORD e JWT_SECRET
+#   4. docker-compose up -d
+#   5. Acesse http://localhost
+#
+# Para atualizar quando houver versão nova:
+#   docker-compose pull && docker-compose up -d
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -62,9 +76,7 @@ services:
       - "6379:6379"
 
   backend:
-    build:
-      context: ..
-      dockerfile: financial/Dockerfile
+    image: ghcr.io/diegos1255/financial-backend:latest
     container_name: financial-backend
     restart: unless-stopped
     environment:
@@ -74,11 +86,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-8}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-480}
+      JWT_COOKIE_SECURE: ${JWT_COOKIE_SECURE:-false}
+      JWT_COOKIE_SAMESITE: ${JWT_COOKIE_SAMESITE:-Lax}
+      REFRESH_TOKEN_DAYS: ${REFRESH_TOKEN_DAYS:-30}
       SERVER_PORT: 8080
       SQL_INIT_MODE: always
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: ${MINIO_BUCKET}
@@ -97,9 +112,7 @@ services:
         condition: service_started
 
   frontend:
-    build:
-      context: ../financial-front
-      dockerfile: Dockerfile
+    image: ghcr.io/diegos1255/financial-frontend:latest
     container_name: financial-frontend
     restart: unless-stopped
     ports:

@@ -107,7 +107,80 @@ financial/                  ← raiz (este repositório)
 
 ---
 
-## Como rodar localmente
+## Quickstart — instalar via imagens prontas (GHCR)
+
+Forma mais rápida pra **quem só vai usar o sistema** (sem mexer no código). Não precisa de Git, Java, Node nem Maven — só Docker. Em vez de buildar as imagens, baixa direto do GitHub Container Registry.
+
+### Pré-requisitos
+- **Docker Desktop** instalado e rodando
+
+### Passo a passo
+```bash
+# 1. Numa pasta vazia em qualquer lugar do seu PC:
+mkdir financial && cd financial
+
+# 2. Baixe os 2 arquivos do repositório:
+#    - docker-compose.dist.yml (renomeie para docker-compose.yml)
+#    - financial/.env.example  (renomeie para .env)
+# Em PowerShell:
+curl -o docker-compose.yml https://raw.githubusercontent.com/diegos1255/financial/master/docker-compose.dist.yml
+curl -o .env https://raw.githubusercontent.com/diegos1255/financial/master/financial/.env.example
+
+# 3. Abra o .env e troque pelo menos:
+#    - POSTGRES_PASSWORD  (qualquer senha forte)
+#    - MINIO_ROOT_PASSWORD (qualquer senha forte)
+#    - JWT_SECRET         (string aleatória de no mínimo 32 caracteres)
+#    Se NÃO vai usar investimentos: FEATURES_INVESTMENTS_ENABLED=false
+
+# 4. Sobe (vai baixar ~700MB de imagens na primeira vez)
+docker-compose up -d
+
+# 5. Acesse http://localhost — cria conta na tela de signup
+```
+
+Dados ficam num volume Docker (`financial-postgres-data`) — sobrevivem a reboots. Pra atualizar quando sair versão nova: `docker-compose pull && docker-compose up -d`.
+
+---
+
+## Quickstart — buildar do source
+
+Alternativa ao GHCR — buildar as imagens localmente a partir do código. Útil se você forkar o repo e modificar.
+
+### Pré-requisitos
+- **Docker Desktop** instalado e rodando
+- **Git**
+
+### Passo a passo
+```bash
+# 1. Clonar
+git clone https://github.com/diegos1255/financial.git
+cd financial
+
+# 2. Configurar variáveis
+cd financial
+cp .env.example .env
+# Edite o .env e troque pelo menos POSTGRES_PASSWORD, MINIO_ROOT_PASSWORD e JWT_SECRET.
+
+# 3. Subir tudo (build local)
+docker-compose up -d --build
+# Demora ~2-3 minutos na primeira vez. Depois é instantâneo.
+
+# 4. Acessar
+# Abra no browser: http://localhost
+```
+
+### Desabilitar o módulo de investimentos
+Se não vai usar cotações/portfólio (não precisa do token Brapi), no `.env`:
+```
+FEATURES_INVESTMENTS_ENABLED=false
+```
+Depois `docker-compose up -d backend frontend`. O menu de investimentos e o card de portfólio do dashboard somem; os endpoints `/api/investments/**` ficam fora do ar (404 nativo). Reativar é só voltar pra `true` e reiniciar.
+
+---
+
+## Como rodar localmente (modo desenvolvimento)
+
+Para quem vai mexer no código. Backend roda fora do Docker (no Eclipse/IntelliJ), frontend roda via Vite com hot-reload.
 
 ### Pré-requisitos
 - Java 21 LTS (Temurin recomendado)
@@ -158,6 +231,7 @@ Ver `financial/.env.example`. Variáveis obrigatórias em runtime:
 | `REDIS_HOST/PORT` | `localhost:6379` | cache de cotações |
 | `MINIO_*` | `localhost:9000` | storage de fotos |
 | `BRAPI_TOKEN` | (vazio) | token Brapi.dev (opcional no free) |
+| `FEATURES_INVESTMENTS_ENABLED` | `true` | `false` desabilita menu, portfolio e endpoints de investimentos |
 
 ---
 
