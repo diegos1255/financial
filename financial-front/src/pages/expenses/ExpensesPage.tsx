@@ -5,6 +5,7 @@ import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { Table } from '../../components/ui/Table';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import { Pagination } from '../../components/ui/Pagination';
 import { Select } from '../../components/ui/Select';
 import { InstallmentsList } from '../../components/expenses/InstallmentsList';
 import { ExpenseFormModal } from './ExpenseFormModal';
@@ -18,6 +19,7 @@ import type { Expense, ExpenseStatus, Installment } from '../../types/expense';
 
 const NOW = new Date();
 const YEARS = yearRange(NOW.getFullYear() - 5, NOW.getFullYear() + 1);
+const PAGE_SIZE = 10;
 
 function installmentProgress(installments: Installment[] | null) {
   if (!installments || installments.length === 0) return null;
@@ -36,6 +38,7 @@ export function ExpensesPage() {
   const [cancelTarget, setCancelTarget] = useState<Expense | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
 
   async function reload() {
     setLoading(true);
@@ -54,6 +57,7 @@ export function ExpensesPage() {
   }
 
   useEffect(() => {
+    setPage(0);
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, month, status]);
@@ -76,6 +80,15 @@ export function ExpensesPage() {
   function toggleExpand(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
+
+  function handlePageChange(newPage: number) {
+    setPage(newPage);
+    setExpandedId(null);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages - 1);
+  const pageItems = items.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
 
   return (
     <div>
@@ -214,8 +227,18 @@ export function ExpensesPage() {
               ),
             },
           ]}
-          data={items}
+          data={pageItems}
         />
+
+        <div className="px-3 border-t border-slate-100">
+          <Pagination
+            page={currentPage}
+            totalPages={totalPages}
+            totalElements={items.length}
+            size={PAGE_SIZE}
+            onPageChange={handlePageChange}
+          />
+        </div>
       </div>
 
       <ExpenseFormModal open={createOpen} onClose={() => setCreateOpen(false)} onSaved={reload} />
