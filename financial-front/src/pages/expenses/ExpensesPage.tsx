@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Ban, ChevronDown, ChevronUp, Pencil, Plus } from 'lucide-react';
+import { Ban, ChevronDown, ChevronUp, Pencil, Plus, Wallet } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { Table } from '../../components/ui/Table';
@@ -11,6 +11,7 @@ import { InstallmentsList } from '../../components/expenses/InstallmentsList';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { ExpenseUpdateModal } from './ExpenseUpdateModal';
 import { expenseService } from '../../services/expenseService';
+import { dashboardService } from '../../services/dashboardService';
 import { formatCurrency } from '../../utils/currency';
 import { formatDate } from '../../utils/date';
 import { MONTHS, yearRange } from '../../utils/months';
@@ -39,6 +40,7 @@ export function ExpensesPage() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [monthTotal, setMonthTotal] = useState<number | null>(null);
 
   async function reload() {
     setLoading(true);
@@ -49,6 +51,17 @@ export function ExpensesPage() {
         status: status === '' ? undefined : status,
       });
       setItems(list);
+
+      if (year !== '' && month !== '') {
+        try {
+          const balance = await dashboardService.balance({ year, month });
+          setMonthTotal(balance.totalExpenses);
+        } catch {
+          setMonthTotal(null);
+        }
+      } else {
+        setMonthTotal(null);
+      }
     } catch (err) {
       toast.error(extractApiError(err, 'Falha ao carregar despesas.'));
     } finally {
@@ -89,6 +102,7 @@ export function ExpensesPage() {
   const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages - 1);
   const pageItems = items.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+  const showMonthTotal = monthTotal !== null && status !== 'CANCELLED';
 
   return (
     <div>
@@ -103,7 +117,7 @@ export function ExpensesPage() {
         }
       />
 
-      <div className="flex flex-wrap gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="w-44">
           <Select value={month} onChange={(e) => setMonth(e.target.value === '' ? '' : Number(e.target.value))}>
             <option value="">Mês (todos)</option>
@@ -131,6 +145,15 @@ export function ExpensesPage() {
             <option value="CANCELLED">Canceladas</option>
           </Select>
         </div>
+        {showMonthTotal && (
+          <div className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
+            <Wallet className="h-4 w-4 text-emerald-500" />
+            <span className="text-emerald-700">Total do mês:</span>
+            <span className="font-semibold text-emerald-800 tabular-nums">
+              {formatCurrency(monthTotal!)}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-soft overflow-hidden">
