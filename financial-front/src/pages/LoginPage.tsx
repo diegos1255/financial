@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn, Wallet } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Wallet } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -11,6 +11,10 @@ export function LoginPage() {
   const { login } = useAuth();
   const [loginValue, setLoginValue] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState<boolean>(
+    () => localStorage.getItem('remember_me') === 'true'
+  );
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -24,6 +28,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await login({ login: loginValue.trim(), password });
+      localStorage.setItem('remember_me', String(rememberMe));
       navigate('/dashboard', { replace: true });
     } catch (err) {
       const apiError = (err as { response?: { data?: ApiError } }).response?.data;
@@ -55,15 +60,43 @@ export function LoginPage() {
             disabled={submitting}
             autoFocus
           />
-          <Input
-            id="password"
-            label="Senha"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            disabled={submitting}
-          />
+          <div className="flex flex-col gap-1">
+            <label htmlFor="password" className="text-sm font-medium text-slate-700">
+              Senha
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                disabled={submitting}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-60"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Esconder senha' : 'Mostrar senha'}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors disabled:cursor-not-allowed"
+                disabled={submitting}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer select-none -mt-1">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              disabled={submitting}
+              className="rounded border-slate-300 text-accent focus:ring-accent"
+            />
+            <span className="text-sm text-slate-600">Manter-se logado</span>
+          </label>
 
           {errorMessage && (
             <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

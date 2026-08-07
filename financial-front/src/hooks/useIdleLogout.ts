@@ -52,6 +52,8 @@ export function useIdleLogout(idleMinutes = 30) {
   }, [idleMinutes, doLogout]);
 
   useEffect(() => {
+    if (localStorage.getItem('remember_me') === 'true') return;
+
     IDLE_EVENTS.forEach((e) => window.addEventListener(e, resetTimer, { passive: true }));
     resetTimer();
 
