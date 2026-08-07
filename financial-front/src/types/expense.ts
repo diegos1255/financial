@@ -45,4 +45,5 @@ export type ExpenseUpdateRequest = {
   description: string;
   categoryId: string;
   bankAccountId: string;
+  totalAmount?: number;
 };

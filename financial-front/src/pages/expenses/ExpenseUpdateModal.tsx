@@ -4,6 +4,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { expenseService } from '../../services/expenseService';
 import { categoryService } from '../../services/categoryService';
 import { bankAccountService } from '../../services/bankAccountService';
@@ -25,8 +26,11 @@ export function ExpenseUpdateModal({ open, onClose, onSaved, editing }: Props) {
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [bankAccountId, setBankAccountId] = useState('');
+  const [totalAmount, setTotalAmount] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isInstallment = editing?.expenseType === 'INSTALLMENT';
 
   useEffect(() => {
     if (!open || !editing) return;
@@ -39,6 +43,7 @@ export function ExpenseUpdateModal({ open, onClose, onSaved, editing }: Props) {
     setDescription(editing.description);
     setCategoryId(editing.category.id);
     setBankAccountId(editing.bankAccount.id);
+    setTotalAmount(editing.totalAmount);
     setError(null);
   }, [open, editing]);
 
@@ -48,12 +53,16 @@ export function ExpenseUpdateModal({ open, onClose, onSaved, editing }: Props) {
     if (!description.trim()) return setError('Descrição é obrigatória');
     if (!categoryId) return setError('Selecione uma categoria');
     if (!bankAccountId) return setError('Selecione uma conta');
+    if (!isInstallment && (totalAmount == null || totalAmount <= 0)) {
+      return setError('Valor deve ser maior que zero');
+    }
     setSubmitting(true);
     try {
       await expenseService.update(editing.id, {
         description: description.trim(),
         categoryId,
         bankAccountId,
+        ...(isInstallment ? {} : { totalAmount: totalAmount ?? 0 }),
       });
       toast.success('Despesa atualizada');
       onSaved();
@@ -83,8 +92,9 @@ export function ExpenseUpdateModal({ open, onClose, onSaved, editing }: Props) {
     >
       <div className="flex flex-col gap-4">
         <p className="text-xs text-slate-500">
-          Apenas descrição, categoria e conta podem ser editadas. Para mudar tipo, valor ou parcelas,
-          cancele e crie uma nova.
+          {isInstallment
+            ? 'Apenas descrição, categoria e conta podem ser editadas. Para mudar valor ou parcelas, cancele e crie uma nova.'
+            : 'Você pode editar descrição, valor, categoria e conta. Para mudar o tipo, cancele e crie uma nova.'}
         </p>
         <Input
           label="Descrição"
@@ -92,6 +102,13 @@ export function ExpenseUpdateModal({ open, onClose, onSaved, editing }: Props) {
           onChange={(e) => setDescription(e.target.value)}
           maxLength={200}
         />
+        {!isInstallment && (
+          <CurrencyInput
+            label="Valor"
+            value={totalAmount}
+            onChange={setTotalAmount}
+          />
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Select label="Categoria" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             <option value="">Selecione...</option>

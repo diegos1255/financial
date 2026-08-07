@@ -136,6 +136,14 @@ public class ExpenseService {
         ensureCategoryBelongsToUser(request.categoryId(), userId);
         ensureBankAccountBelongsToUser(request.bankAccountId(), userId);
 
+        if (request.totalAmount() != null) {
+            if (expense.getExpenseType() == ExpenseType.INSTALLMENT) {
+                throw new InvalidExpenseTypeException(
+                        "Valor de despesas parceladas não pode ser editado. Cancele e crie uma nova.");
+            }
+            expense.setTotalAmount(request.totalAmount());
+        }
+
         expense.setDescription(request.description());
         expense.setCategory(entityManager.getReference(ExpenseCategory.class, request.categoryId()));
         expense.setBankAccount(entityManager.getReference(BankAccount.class, request.bankAccountId()));
