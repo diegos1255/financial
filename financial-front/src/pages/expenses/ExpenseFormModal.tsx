@@ -31,7 +31,7 @@ export function ExpenseFormModal({ open, onClose, onSaved }: Props) {
 
   const [description, setDescription] = useState('');
   const [totalAmount, setTotalAmount] = useState<number | null>(null);
-  const [expenseType, setExpenseType] = useState<ExpenseType>('FIXED');
+  const [expenseType, setExpenseType] = useState<ExpenseType>('VARIABLE');
   const [installmentsCount, setInstallmentsCount] = useState('');
   const [purchaseDate, setPurchaseDate] = useState(todayIso());
   const [firstDueDate, setFirstDueDate] = useState('');
@@ -51,7 +51,7 @@ export function ExpenseFormModal({ open, onClose, onSaved }: Props) {
 
     setDescription('');
     setTotalAmount(null);
-    setExpenseType('FIXED');
+    setExpenseType('VARIABLE');
     setInstallmentsCount('');
     setPurchaseDate(todayIso());
     setFirstDueDate('');
@@ -153,9 +153,9 @@ export function ExpenseFormModal({ open, onClose, onSaved }: Props) {
             value={expenseType}
             onChange={(e) => handleTypeChange(e.target.value as ExpenseType)}
           >
-            <option value="FIXED">Fixa (mensalidade)</option>
-            <option value="INSTALLMENT">Parcelada</option>
             <option value="VARIABLE">Variável (pontual)</option>
+            <option value="INSTALLMENT">Parcelada</option>
+            <option value="FIXED">Fixa (mensalidade)</option>
           </Select>
           <Input
             label="Data da compra"
