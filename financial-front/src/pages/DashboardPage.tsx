@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, PieChart as PieIcon, Wallet } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, PieChart as PieIcon, Receipt, Wallet } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 import { KpiCard } from '../components/ui/KpiCard';
 import { PieChart } from '../components/ui/PieChart';
@@ -8,6 +8,7 @@ import { CategoryExpensesModal } from './dashboard/CategoryExpensesModal';
 import { PortfolioCard } from './dashboard/PortfolioCard';
 import { dashboardService } from '../services/dashboardService';
 import { investmentService } from '../services/investmentService';
+import { pjService } from '../services/pjService';
 import type { BalanceResponse, CategoryExpense } from '../types/dashboard';
 import type { InvestmentPortfolioResponse } from '../types/investment';
 import { formatCurrency } from '../utils/currency';
@@ -33,7 +34,7 @@ const CHIP_TONE_CLASSES: Record<ChipTone, string> = {
 function BreakdownChip({ tone, label, value }: { tone: ChipTone; label: string; value: string }) {
   return (
     <div
-      className={`flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-medium ring-1 ring-inset tabular-nums ${CHIP_TONE_CLASSES[tone]}`}
+      className={`flex flex-col gap-0.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium ring-1 ring-inset tabular-nums ${CHIP_TONE_CLASSES[tone]}`}
     >
       <span className="opacity-75">{label}</span>
       <span className="font-semibold">{value}</span>
@@ -47,8 +48,12 @@ export function DashboardPage() {
   const [balance, setBalance] = useState<BalanceResponse | null>(null);
   const [byCategory, setByCategory] = useState<CategoryExpense[]>([]);
   const [portfolio, setPortfolio] = useState<InvestmentPortfolioResponse | null>(null);
+  const [prevMonthTaxes, setPrevMonthTaxes] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
   const [categoryModal, setCategoryModal] = useState<CategoryModal>({
     open: false,
     categoryId: '',
@@ -63,12 +68,17 @@ export function DashboardPage() {
       dashboardService.balance({ year, month }),
       dashboardService.expensesByCategory({ year, month }),
       investmentService.getPortfolio().catch(() => null),
+      pjService.list({ year: prevYear, month: prevMonth }).catch(() => []),
     ])
-      .then(([b, c, p]) => {
+      .then(([b, c, p, pjPrev]) => {
         if (!cancelled) {
           setBalance(b);
           setByCategory(c);
           setPortfolio(p);
+          const taxes = pjPrev
+            .filter((e) => e.type === 'DAS' || e.type === 'INSS' || e.type === 'ACCOUNTING')
+            .reduce((sum, e) => sum + e.amount, 0);
+          setPrevMonthTaxes(taxes);
         }
       })
       .catch((err) => {
@@ -123,7 +133,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KpiCard
           title="Salário"
           value={formatCurrency(balance?.salary ?? 0)}
@@ -152,6 +162,13 @@ export function DashboardPage() {
           value={formatCurrency(balance?.balance ?? 0)}
           icon={<Wallet className="h-5 w-5" />}
           variant={balanceVariant}
+        />
+        <KpiCard
+          title="Impostos PJ"
+          value={formatCurrency(prevMonthTaxes)}
+          icon={<Receipt className="h-5 w-5" />}
+          variant="negative"
+          subtitle={`Referente a ${monthLabel(prevMonth)}/${prevYear}`}
         />
       </div>
 
