@@ -24,3 +24,7 @@ WHERE NOT EXISTS (SELECT 1 FROM menus WHERE label = 'Despesas');
 INSERT INTO menus (id, label, route, icon, sort_order, active, created_date, updated_date)
 SELECT gen_random_uuid(), 'Investimentos', '/investments', 'trending-up', 6, true, now(), now()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE label = 'Investimentos');
+
+INSERT INTO menus (id, label, route, icon, sort_order, active, created_date, updated_date)
+SELECT gen_random_uuid(), 'PJ', '/pj', 'briefcase', 7, true, now(), now()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE label = 'PJ');

@@ -61,12 +61,14 @@ services:
       mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} &&
       mc mb --ignore-existing local/${MINIO_BUCKET} &&
       mc anonymous set public local/${MINIO_BUCKET} &&
-      echo 'Bucket pronto.'
+      mc mb --ignore-existing local/${MINIO_PJ_BUCKET:-financial-pj-files} &&
+      echo 'Buckets prontos.'
       "
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_PJ_BUCKET: ${MINIO_PJ_BUCKET:-financial-pj-files}
 
   redis:
     image: redis:7-alpine
@@ -97,6 +99,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_PJ_BUCKET: ${MINIO_PJ_BUCKET:-financial-pj-files}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       BRAPI_TOKEN: ${BRAPI_TOKEN:-}

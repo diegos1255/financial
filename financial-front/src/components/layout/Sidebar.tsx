@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
+  Briefcase,
   CircleDot,
   CreditCard,
   DollarSign,
@@ -23,6 +24,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   'dollar-sign': DollarSign,
   'shopping-cart': ShoppingCart,
   'trending-up': TrendingUp,
+  briefcase: Briefcase,
 };
 
 function MenuIcon({ icon }: { icon: string | null }) {

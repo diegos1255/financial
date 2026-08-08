@@ -103,6 +103,12 @@ public class ApiErrorHandler {
                 .body(ApiError.of(400, "INVALID_PHOTO", e.getMessage()));
     }
 
+    @ExceptionHandler(InvalidFileException.class)
+    public ResponseEntity<ApiError> handleInvalidFile(InvalidFileException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of(400, "INVALID_FILE", e.getMessage()));
+    }
+
     @ExceptionHandler(RefreshTokenInvalidException.class)
     public ResponseEntity<ApiError> handleRefreshTokenInvalid(RefreshTokenInvalidException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
