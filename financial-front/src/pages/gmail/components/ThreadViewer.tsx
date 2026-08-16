@@ -1,8 +1,12 @@
 import DOMPurify from 'dompurify';
+import { Mail, Trash2 } from 'lucide-react';
 import type { MessageDetail, ThreadDetail } from '../../../types/gmail';
 
 type Props = {
   thread: ThreadDetail;
+  onTrash: () => void;
+  onMarkUnread: () => void;
+  loading?: boolean;
 };
 
 function formatDateTime(iso: string): string {
@@ -54,10 +58,32 @@ function MessageCard({ message }: { message: MessageDetail }) {
   );
 }
 
-export function ThreadViewer({ thread }: Props) {
+export function ThreadViewer({ thread, onTrash, onMarkUnread, loading }: Props) {
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold text-slate-900">{thread.subject}</h2>
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="flex-1 text-lg font-semibold text-slate-900">{thread.subject}</h2>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={onMarkUnread}
+            disabled={loading}
+            title="Marcar como não-lido"
+            className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-accent transition-colors disabled:opacity-50"
+          >
+            <Mail className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onTrash}
+            disabled={loading}
+            title="Mover para lixeira"
+            className="rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
       {thread.messages.map((m) => (
         <MessageCard key={m.id} message={m} />
       ))}

@@ -48,6 +48,13 @@ export type UnreadSummary = {
   latestUnreadSubject: string | null;
 };
 
+export type GmailBulkAction = 'ARCHIVE' | 'TRASH' | 'READ' | 'UNREAD';
+
+export type BulkActionResponse = {
+  successCount: number;
+  failedIds: string[];
+};
+
 export const CATEGORY_LABELS: Record<GmailCategory, string> = {
   PRIMARY: 'Principal',
   SOCIAL: 'Social',

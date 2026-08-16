@@ -1,6 +1,8 @@
 import { api } from './api';
 import type {
+  BulkActionResponse,
   GmailAuthUrl,
+  GmailBulkAction,
   GmailCategory,
   GmailStatus,
   PagedThreadsResponse,
@@ -52,5 +54,25 @@ export const gmailService = {
       if (anyErr.response?.status === 404) return null;
       throw err;
     }
+  },
+
+  async archiveThread(id: string): Promise<void> {
+    await api.post(`/api/gmail/threads/${id}/archive`);
+  },
+
+  async trashThread(id: string): Promise<void> {
+    await api.post(`/api/gmail/threads/${id}/trash`);
+  },
+
+  async markThreadAsUnread(id: string): Promise<void> {
+    await api.post(`/api/gmail/threads/${id}/unread`);
+  },
+
+  async bulkAction(action: GmailBulkAction, threadIds: string[]): Promise<BulkActionResponse> {
+    const { data } = await api.post<BulkActionResponse>('/api/gmail/threads/bulk', {
+      action,
+      threadIds,
+    });
+    return data;
   },
 };

@@ -3,13 +3,16 @@ import toast from 'react-hot-toast';
 import { Bell, BellOff, RefreshCw, Volume2, VolumeX } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { ThreadListItem } from './components/ThreadListItem';
 import { ThreadViewer } from './components/ThreadViewer';
+import { SelectionToolbar } from './components/SelectionToolbar';
 import { gmailService } from '../../services/gmailService';
 import { extractApiError } from '../../utils/apiError';
 import { useGmailNotifications } from '../../contexts/GmailNotificationsContext';
 import {
   CATEGORY_LABELS,
+  type GmailBulkAction,
   type GmailCategory,
   type ThreadDetail,
   type ThreadSummary,
@@ -35,6 +38,9 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedThread, setSelectedThread] = useState<ThreadDetail | null>(null);
   const [loadingThread, setLoadingThread] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [actionLoading, setActionLoading] = useState(false);
+  const [confirmTrash, setConfirmTrash] = useState<{ mode: 'single'; id: string } | { mode: 'bulk' } | null>(null);
   const { refreshTick, voiceEnabled, setVoiceEnabled } = useGmailNotifications();
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'denied',
@@ -127,11 +133,120 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
 
   function handleRefresh() {
     setSelectedThread(null);
+    setSelectedIds(new Set());
     setCache((prev) => ({
       ...prev,
       [activeCategory]: { threads: [], nextPageToken: null, loaded: false },
     }));
     loadCategory(activeCategory);
+  }
+
+  function toggleCheck(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function removeFromCurrentCache(ids: string[]) {
+    const idsSet = new Set(ids);
+    setCache((prev) => ({
+      ...prev,
+      [activeCategory]: {
+        ...prev[activeCategory],
+        threads: prev[activeCategory].threads.filter((t) => !idsSet.has(t.id)),
+      },
+    }));
+  }
+
+  function markUnreadInCache(ids: string[]) {
+    const idsSet = new Set(ids);
+    setCache((prev) => ({
+      ...prev,
+      [activeCategory]: {
+        ...prev[activeCategory],
+        threads: prev[activeCategory].threads.map((t) =>
+          idsSet.has(t.id) ? { ...t, unread: true } : t,
+        ),
+      },
+    }));
+  }
+
+  async function doSingleAction(action: 'trash' | 'unread', id: string) {
+    setActionLoading(true);
+    try {
+      if (action === 'trash') await gmailService.trashThread(id);
+      else await gmailService.markThreadAsUnread(id);
+
+      if (action === 'unread') {
+        markUnreadInCache([id]);
+      } else {
+        removeFromCurrentCache([id]);
+      }
+      if (selectedThread?.id === id) setSelectedThread(null);
+      selectedIds.delete(id);
+      setSelectedIds(new Set(selectedIds));
+      toast.success(action === 'trash' ? 'Movido para lixeira' : 'Marcado como não-lido');
+    } catch (err) {
+      toast.error(extractApiError(err, 'Falha ao executar ação.'));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function doBulkAction(action: GmailBulkAction) {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    setActionLoading(true);
+    try {
+      const result = await gmailService.bulkAction(action, ids);
+      if (action === 'UNREAD') {
+        markUnreadInCache(ids.filter((id) => !result.failedIds.includes(id)));
+      } else {
+        removeFromCurrentCache(ids.filter((id) => !result.failedIds.includes(id)));
+      }
+      if (selectedThread && ids.includes(selectedThread.id)) setSelectedThread(null);
+      clearSelection();
+
+      const label =
+        action === 'ARCHIVE' ? 'arquivada(s)'
+          : action === 'TRASH' ? 'movida(s) para lixeira'
+            : action === 'UNREAD' ? 'marcada(s) como não-lida(s)'
+              : 'processada(s)';
+      const msg = result.failedIds.length === 0
+        ? `${result.successCount} conversa(s) ${label}`
+        : `${result.successCount} conversa(s) ${label}, ${result.failedIds.length} falha(s)`;
+      if (result.failedIds.length === 0) toast.success(msg);
+      else toast.error(msg);
+    } catch (err) {
+      toast.error(extractApiError(err, 'Falha ao executar ação em lote.'));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  function handleTrashClick(id: string) {
+    setConfirmTrash({ mode: 'single', id });
+  }
+
+  function handleBulkTrash() {
+    setConfirmTrash({ mode: 'bulk' });
+  }
+
+  async function confirmTrashAction() {
+    if (!confirmTrash) return;
+    if (confirmTrash.mode === 'single') {
+      await doSingleAction('trash', confirmTrash.id);
+    } else {
+      await doBulkAction('TRASH');
+    }
+    setConfirmTrash(null);
   }
 
   const current = cache[activeCategory];
@@ -181,7 +296,10 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
           <button
             key={cat}
             type="button"
-            onClick={() => setActiveCategory(cat)}
+            onClick={() => {
+              setActiveCategory(cat);
+              clearSelection();
+            }}
             className={[
               'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
               activeCategory === cat
@@ -193,6 +311,14 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
           </button>
         ))}
       </div>
+
+      <SelectionToolbar
+        selectedCount={selectedIds.size}
+        loading={actionLoading}
+        onMarkUnread={() => doBulkAction('UNREAD')}
+        onTrash={handleBulkTrash}
+        onClear={clearSelection}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_1fr] gap-4">
         <div className="rounded-xl border border-slate-200 bg-white shadow-soft overflow-hidden max-h-[70vh] overflow-y-auto">
@@ -209,7 +335,9 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
               key={t.id}
               thread={t}
               selected={selectedThread?.id === t.id}
+              checked={selectedIds.has(t.id)}
               onClick={() => handleThreadClick(t)}
+              onToggleCheck={() => toggleCheck(t.id)}
             />
           ))}
           {current.nextPageToken && (
@@ -233,9 +361,31 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
               Selecione uma conversa pra ler.
             </p>
           )}
-          {selectedThread && <ThreadViewer thread={selectedThread} />}
+          {selectedThread && (
+            <ThreadViewer
+              thread={selectedThread}
+              loading={actionLoading}
+              onMarkUnread={() => doSingleAction('unread', selectedThread.id)}
+              onTrash={() => handleTrashClick(selectedThread.id)}
+            />
+          )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={!!confirmTrash}
+        onClose={() => setConfirmTrash(null)}
+        onConfirm={confirmTrashAction}
+        title="Mover para lixeira"
+        message={
+          confirmTrash?.mode === 'bulk'
+            ? `Mover ${selectedIds.size} conversa(s) para lixeira?`
+            : 'Mover esta conversa para lixeira?'
+        }
+        confirmLabel="Mover"
+        cancelLabel="Cancelar"
+        loading={actionLoading}
+      />
     </div>
   );
 }

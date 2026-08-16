@@ -3,7 +3,9 @@ import type { ThreadSummary } from '../../../types/gmail';
 type Props = {
   thread: ThreadSummary;
   selected: boolean;
+  checked: boolean;
   onClick: () => void;
+  onToggleCheck: () => void;
 };
 
 function formatDate(iso: string): string {
@@ -30,43 +32,57 @@ function extractFromName(from: string): string {
   return match ? match[1].trim() : from;
 }
 
-export function ThreadListItem({ thread, selected, onClick }: Props) {
+export function ThreadListItem({ thread, selected, checked, onClick, onToggleCheck }: Props) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <div
       className={[
-        'w-full text-left px-4 py-3 border-b border-slate-100 transition-colors',
-        selected ? 'bg-accent-soft' : thread.unread ? 'bg-blue-50/40 hover:bg-slate-50' : 'bg-white hover:bg-slate-50',
+        'flex items-start gap-2 px-3 py-3 border-b border-slate-100 transition-colors cursor-pointer',
+        selected
+          ? 'bg-accent-soft'
+          : checked
+            ? 'bg-slate-100'
+            : thread.unread
+              ? 'bg-blue-50/40 hover:bg-slate-50'
+              : 'bg-white hover:bg-slate-50',
       ].join(' ')}
+      onClick={onClick}
     >
-      <div className="flex items-center justify-between gap-3">
-        <span
+      <input
+        type="checkbox"
+        checked={checked}
+        onClick={(e) => e.stopPropagation()}
+        onChange={onToggleCheck}
+        className="mt-1 rounded border-slate-300 text-accent focus:ring-accent cursor-pointer"
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-3">
+          <span
+            className={[
+              'truncate text-sm',
+              thread.unread ? 'font-semibold text-slate-900' : 'text-slate-700',
+            ].join(' ')}
+          >
+            {extractFromName(thread.from)}
+            {thread.messageCount > 1 && (
+              <span className="ml-1 text-xs text-slate-500">({thread.messageCount})</span>
+            )}
+          </span>
+          <span className="shrink-0 text-xs text-slate-500 tabular-nums">
+            {formatDate(thread.date)}
+          </span>
+        </div>
+        <div
           className={[
-            'truncate text-sm',
-            thread.unread ? 'font-semibold text-slate-900' : 'text-slate-700',
+            'mt-1 truncate text-sm',
+            thread.unread ? 'font-medium text-slate-800' : 'text-slate-600',
           ].join(' ')}
         >
-          {extractFromName(thread.from)}
-          {thread.messageCount > 1 && (
-            <span className="ml-1 text-xs text-slate-500">({thread.messageCount})</span>
-          )}
-        </span>
-        <span className="shrink-0 text-xs text-slate-500 tabular-nums">
-          {formatDate(thread.date)}
-        </span>
+          {thread.subject || '(sem assunto)'}
+        </div>
+        {thread.snippet && (
+          <div className="mt-1 truncate text-xs text-slate-500">{thread.snippet}</div>
+        )}
       </div>
-      <div
-        className={[
-          'mt-1 truncate text-sm',
-          thread.unread ? 'font-medium text-slate-800' : 'text-slate-600',
-        ].join(' ')}
-      >
-        {thread.subject || '(sem assunto)'}
-      </div>
-      {thread.snippet && (
-        <div className="mt-1 truncate text-xs text-slate-500">{thread.snippet}</div>
-      )}
-    </button>
+    </div>
   );
 }

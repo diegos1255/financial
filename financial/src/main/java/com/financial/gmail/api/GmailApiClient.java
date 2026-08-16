@@ -79,6 +79,13 @@ public class GmailApiClient {
     }
 
     /**
+     * POST /threads/{id}/trash — move a thread inteira para a lixeira do Gmail.
+     */
+    public Map<String, Object> trashThread(String threadId) {
+        return postJson(BASE_URL + "/threads/" + threadId + "/trash", Map.of());
+    }
+
+    /**
      * POST /threads/{id}/modify — body: { addLabelIds: [...], removeLabelIds: [...] }
      */
     public Map<String, Object> modifyThread(String threadId,
