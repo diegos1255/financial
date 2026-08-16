@@ -7,6 +7,7 @@ import {
   DollarSign,
   Home,
   LogOut,
+  Mail,
   ShoppingCart,
   Tag,
   TrendingUp,
@@ -25,6 +26,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   'shopping-cart': ShoppingCart,
   'trending-up': TrendingUp,
   briefcase: Briefcase,
+  mail: Mail,
 };
 
 function MenuIcon({ icon }: { icon: string | null }) {

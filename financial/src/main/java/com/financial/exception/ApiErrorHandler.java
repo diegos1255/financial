@@ -11,6 +11,9 @@ import com.financial.exception.InvalidPhotoException;
 import com.financial.exception.LoginAlreadyExistsException;
 import com.financial.exception.ResourceConflictException;
 import com.financial.exception.ResourceNotFoundException;
+import com.financial.gmail.exception.GmailInvalidStateException;
+import com.financial.gmail.exception.GmailReauthRequiredException;
+import com.financial.gmail.exception.GmailTokenExchangeException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,6 +110,25 @@ public class ApiErrorHandler {
     public ResponseEntity<ApiError> handleInvalidFile(InvalidFileException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiError.of(400, "INVALID_FILE", e.getMessage()));
+    }
+
+    @ExceptionHandler(GmailInvalidStateException.class)
+    public ResponseEntity<ApiError> handleGmailInvalidState(GmailInvalidStateException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of(400, "GMAIL_INVALID_STATE", e.getMessage()));
+    }
+
+    @ExceptionHandler(GmailTokenExchangeException.class)
+    public ResponseEntity<ApiError> handleGmailTokenExchange(GmailTokenExchangeException e) {
+        log.error("Gmail token exchange failed", e);
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiError.of(502, "GMAIL_TOKEN_EXCHANGE_FAILED", e.getMessage()));
+    }
+
+    @ExceptionHandler(GmailReauthRequiredException.class)
+    public ResponseEntity<ApiError> handleGmailReauthRequired(GmailReauthRequiredException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiError.of(401, "GMAIL_REAUTH_REQUIRED", e.getMessage()));
     }
 
     @ExceptionHandler(RefreshTokenInvalidException.class)
