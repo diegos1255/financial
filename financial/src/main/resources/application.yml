@@ -72,6 +72,13 @@ gmail:
   revoke-endpoint: https://oauth2.googleapis.com/revoke
   userinfo-endpoint: https://openidconnect.googleapis.com/v1/userinfo
 
+tts:
+  elevenlabs:
+    api-key: ${ELEVENLABS_API_KEY:}
+    voice-id: ${ELEVENLABS_VOICE_ID:}
+    model-id: ${ELEVENLABS_MODEL_ID:eleven_multilingual_v2}
+    endpoint: https://api.elevenlabs.io/v1/text-to-speech
+
 logging:
   level:
     com.financial: DEBUG

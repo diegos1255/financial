@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import { gmailService } from '../services/gmailService';
+import { ttsService, playAudioBlob } from '../services/ttsService';
 import { useAuth } from '../hooks/useAuth';
 
 const POLL_INTERVAL_MS = 30_000;
@@ -23,20 +24,21 @@ const GmailNotificationsContext = createContext<GmailNotificationsValue>({
   setVoiceEnabled: () => {},
 });
 
-function speakNewEmail(fromName: string, subject: string | null): void {
+function buildSpeechText(fromName: string, subject: string | null): string {
+  return subject
+    ? `Novo email de ${fromName}. Assunto: ${subject}`
+    : `Novo email de ${fromName}`;
+}
+
+function speakViaWindows(text: string): void {
   try {
     if (!('speechSynthesis' in window)) return;
-    const utter = new SpeechSynthesisUtterance(
-      subject
-        ? `Novo email de ${fromName}. Assunto: ${subject}`
-        : `Novo email de ${fromName}`
-    );
+    const utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'pt-BR';
     utter.rate = 1.0;
     utter.pitch = 1.0;
     utter.volume = 1.0;
 
-    // tenta escolher voz PT-BR se disponivel
     const voices = window.speechSynthesis.getVoices();
     const ptVoice = voices.find((v) => v.lang.toLowerCase().startsWith('pt'));
     if (ptVoice) utter.voice = ptVoice;
@@ -45,6 +47,30 @@ function speakNewEmail(fromName: string, subject: string | null): void {
   } catch {
     // silencia falhas de TTS
   }
+}
+
+/**
+ * Tenta ElevenLabs (voz Jarvis) primeiro. Se backend nao tem config ou call falha,
+ * cai para speechSynthesis nativo do browser (voz do Windows).
+ */
+async function speakNewEmail(
+  fromName: string,
+  subject: string | null,
+  elevenlabsAvailable: boolean,
+): Promise<void> {
+  const text = buildSpeechText(fromName, subject);
+  if (elevenlabsAvailable) {
+    const blob = await ttsService.speak(text);
+    if (blob && blob.size > 0) {
+      try {
+        await playAudioBlob(blob);
+        return;
+      } catch (err) {
+        console.warn('[TTS] fallback pra Windows TTS por causa de:', err);
+      }
+    }
+  }
+  speakViaWindows(text);
 }
 
 function showOsNotification(fromName: string, subject: string | null): void {
@@ -75,6 +101,12 @@ export function GmailNotificationsProvider({ children }: { children: ReactNode }
   const [voiceEnabled, setVoiceEnabledState] = useState<boolean>(
     () => localStorage.getItem(VOICE_ENABLED_KEY) !== 'false',
   );
+  const [elevenlabsAvailable, setElevenlabsAvailable] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    ttsService.isEnabled().then(setElevenlabsAvailable);
+  }, [user]);
 
   function setVoiceEnabled(enabled: boolean) {
     setVoiceEnabledState(enabled);
@@ -118,7 +150,7 @@ export function GmailNotificationsProvider({ children }: { children: ReactNode }
           });
 
           if (voiceEnabled) {
-            speakNewEmail(fromName, summary.latestUnreadSubject);
+            void speakNewEmail(fromName, summary.latestUnreadSubject, elevenlabsAvailable);
           }
 
           showOsNotification(fromName, summary.latestUnreadSubject);
@@ -137,7 +169,7 @@ export function GmailNotificationsProvider({ children }: { children: ReactNode }
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [user, voiceEnabled]);
+  }, [user, voiceEnabled, elevenlabsAvailable]);
 
   return (
     <GmailNotificationsContext.Provider
