@@ -72,6 +72,13 @@ public class GmailApiClient {
     }
 
     /**
+     * GET /labels/{id} — retorna a label com contagens EXATAS (messagesUnread, messagesTotal, etc.)
+     */
+    public Map<String, Object> getLabel(String labelId) {
+        return getJson(BASE_URL + "/labels/" + labelId);
+    }
+
+    /**
      * POST /threads/{id}/modify — body: { addLabelIds: [...], removeLabelIds: [...] }
      */
     public Map<String, Object> modifyThread(String threadId,

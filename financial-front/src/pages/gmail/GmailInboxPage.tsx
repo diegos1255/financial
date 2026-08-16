@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { RefreshCw } from 'lucide-react';
+import { Bell, BellOff, RefreshCw, Volume2, VolumeX } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { ThreadListItem } from './components/ThreadListItem';
 import { ThreadViewer } from './components/ThreadViewer';
 import { gmailService } from '../../services/gmailService';
 import { extractApiError } from '../../utils/apiError';
+import { useGmailNotifications } from '../../contexts/GmailNotificationsContext';
 import {
   CATEGORY_LABELS,
   type GmailCategory,
@@ -34,6 +35,30 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedThread, setSelectedThread] = useState<ThreadDetail | null>(null);
   const [loadingThread, setLoadingThread] = useState(false);
+  const { refreshTick, voiceEnabled, setVoiceEnabled } = useGmailNotifications();
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
+    typeof Notification !== 'undefined' ? Notification.permission : 'denied',
+  );
+
+  async function requestNotificationPermission() {
+    if (typeof Notification === 'undefined') {
+      toast.error('Este browser não suporta notificações');
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    setNotifPerm(perm);
+    if (perm === 'granted') {
+      toast.success('Notificações do sistema ativadas');
+    } else {
+      toast.error('Permissão de notificação negada');
+    }
+  }
+
+  function toggleVoice() {
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    toast.success(next ? 'Voz ativada' : 'Voz desativada', { duration: 2000 });
+  }
 
   async function loadCategory(category: GmailCategory, append = false) {
     const state = cache[category];
@@ -67,6 +92,13 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCategory]);
+
+  // Reage a novo email detectado pelo polling do context: refetch categoria atual
+  useEffect(() => {
+    if (refreshTick === 0) return;
+    loadCategory(activeCategory);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTick]);
 
   async function handleThreadClick(thread: ThreadSummary) {
     setLoadingThread(true);
@@ -110,10 +142,37 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
         title="Email"
         subtitle={emailAddress ? `Conectado como ${emailAddress}` : 'Gmail'}
         actions={
-          <Button variant="ghost" onClick={handleRefresh} disabled={loadingCategory !== null}>
-            <RefreshCw className={`h-4 w-4 ${loadingCategory === activeCategory ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleVoice}
+              title={voiceEnabled ? 'Desativar voz' : 'Ativar voz'}
+              className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-accent transition-colors"
+            >
+              {voiceEnabled
+                ? <Volume2 className="h-4 w-4" />
+                : <VolumeX className="h-4 w-4" />}
+            </button>
+            {notifPerm !== 'granted' && (
+              <button
+                type="button"
+                onClick={requestNotificationPermission}
+                title="Ativar notificações do Windows"
+                className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-accent transition-colors"
+              >
+                <BellOff className="h-4 w-4" />
+              </button>
+            )}
+            {notifPerm === 'granted' && (
+              <span title="Notificações do Windows ativas" className="rounded p-1.5 text-emerald-600">
+                <Bell className="h-4 w-4" />
+              </span>
+            )}
+            <Button variant="ghost" onClick={handleRefresh} disabled={loadingCategory !== null}>
+              <RefreshCw className={`h-4 w-4 ${loadingCategory === activeCategory ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
         }
       />
 

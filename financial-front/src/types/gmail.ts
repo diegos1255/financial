@@ -41,6 +41,13 @@ export type PagedThreadsResponse = {
   nextPageToken: string | null;
 };
 
+export type UnreadSummary = {
+  totalUnread: number;
+  latestUnreadId: string | null;
+  latestUnreadFrom: string | null;
+  latestUnreadSubject: string | null;
+};
+
 export const CATEGORY_LABELS: Record<GmailCategory, string> = {
   PRIMARY: 'Principal',
   SOCIAL: 'Social',

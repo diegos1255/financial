@@ -5,6 +5,7 @@ import type {
   GmailStatus,
   PagedThreadsResponse,
   ThreadDetail,
+  UnreadSummary,
 } from '../types/gmail';
 
 export const gmailService = {
@@ -40,5 +41,16 @@ export const gmailService = {
 
   async markThreadAsRead(id: string): Promise<void> {
     await api.post(`/api/gmail/threads/${id}/read`);
+  },
+
+  async getUnreadSummary(): Promise<UnreadSummary | null> {
+    try {
+      const { data } = await api.get<UnreadSummary>('/api/gmail/unread-summary');
+      return data;
+    } catch (err) {
+      const anyErr = err as { response?: { status?: number } };
+      if (anyErr.response?.status === 404) return null;
+      throw err;
+    }
   },
 };
