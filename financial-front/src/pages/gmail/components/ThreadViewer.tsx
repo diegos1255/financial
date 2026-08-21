@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify';
 import { Mail, Trash2 } from 'lucide-react';
 import { LabelPicker } from './LabelPicker';
+import { AttachmentList } from './AttachmentList';
 import type { LabelSummary, MessageDetail, ThreadDetail } from '../../../types/gmail';
 
 type Props = {
@@ -57,6 +58,9 @@ function MessageCard({ message }: { message: MessageDetail }) {
         className="prose prose-sm max-w-none text-sm text-slate-800 [&_a]:text-accent [&_img]:max-w-full"
         dangerouslySetInnerHTML={{ __html: sanitized }}
       />
+      {message.attachments && message.attachments.length > 0 && (
+        <AttachmentList messageId={message.id} attachments={message.attachments} />
+      )}
     </div>
   );
 }

@@ -155,6 +155,13 @@ public class GmailApiClient {
         return postJson(BASE_URL + "/messages/send", body);
     }
 
+    /**
+     * GET /messages/{messageId}/attachments/{attachmentId} — retorna { data: base64url, size }.
+     */
+    public Map<String, Object> getAttachment(String messageId, String attachmentId) {
+        return getJson(BASE_URL + "/messages/" + messageId + "/attachments/" + attachmentId);
+    }
+
     // ---- HTTP helpers ----
 
     private Map<String, Object> getJson(String uri) {

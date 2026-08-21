@@ -19,6 +19,13 @@ export type ThreadSummary = {
   messageCount: number;
 };
 
+export type AttachmentSummary = {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number | null;
+};
+
 export type MessageDetail = {
   id: string;
   from: string;
@@ -28,6 +35,7 @@ export type MessageDetail = {
   bodyHtml: string;
   labelIds: string[];
   unread: boolean;
+  attachments: AttachmentSummary[];
 };
 
 export type ThreadDetail = {

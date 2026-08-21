@@ -11,5 +11,6 @@ public record MessageDetail(
         OffsetDateTime date,
         String bodyHtml,
         List<String> labelIds,
-        boolean unread
+        boolean unread,
+        List<AttachmentSummary> attachments
 ) {}

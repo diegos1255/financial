@@ -5,8 +5,8 @@ spring:
     name: financial
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
+      max-file-size: 25MB
+      max-request-size: 30MB
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:financial}
     username: ${POSTGRES_USER:financial}

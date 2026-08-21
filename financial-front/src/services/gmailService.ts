@@ -115,8 +115,33 @@ export const gmailService = {
     await api.post(`/api/gmail/threads/${threadId}/labels`, { add, remove });
   },
 
-  async sendMessage(request: SendMessageRequest): Promise<SendMessageResponse> {
-    const { data } = await api.post<SendMessageResponse>('/api/gmail/messages/send', request);
+  async sendMessage(request: SendMessageRequest, files?: File[]): Promise<SendMessageResponse> {
+    if (!files || files.length === 0) {
+      const { data } = await api.post<SendMessageResponse>('/api/gmail/messages/send', request);
+      return data;
+    }
+    const form = new FormData();
+    form.append('payload', JSON.stringify(request));
+    for (const f of files) form.append('files', f);
+    const { data } = await api.post<SendMessageResponse>('/api/gmail/messages/send', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  },
+
+  async downloadAttachment(
+    messageId: string,
+    attachmentId: string,
+    filename: string,
+    contentType?: string,
+  ): Promise<Blob> {
+    const { data } = await api.get<Blob>(
+      `/api/gmail/messages/${messageId}/attachments/${attachmentId}`,
+      {
+        params: { filename, contentType },
+        responseType: 'blob',
+      },
+    );
     return data;
   },
 

@@ -1,10 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import toast from 'react-hot-toast';
+import { Paperclip, X } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 import { EmailTagsInput } from './EmailTagsInput';
 import { gmailService } from '../../../services/gmailService';
 import { extractApiError } from '../../../utils/apiError';
+
+const MAX_ATTACHMENTS_BYTES = 25 * 1024 * 1024;
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 type Props = {
   open: boolean;
@@ -23,6 +32,8 @@ export function GmailComposerModal({ open, onClose, onSent }: Props) {
   const [sending, setSending] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [discardConfirm, setDiscardConfirm] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -35,11 +46,33 @@ export function GmailComposerModal({ open, onClose, onSent }: Props) {
       setShowBcc(false);
       setValidationError(null);
       setDiscardConfirm(false);
+      setFiles([]);
     }
   }, [open]);
 
+  const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+
   const hasContent =
-    to.length > 0 || cc.length > 0 || bcc.length > 0 || subject.trim() !== '' || body.trim() !== '';
+    to.length > 0 || cc.length > 0 || bcc.length > 0 || subject.trim() !== '' || body.trim() !== '' || files.length > 0;
+
+  function onFilesPicked(e: ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    if (picked.length === 0) return;
+    const merged = [...files, ...picked];
+    const total = merged.reduce((sum, f) => sum + f.size, 0);
+    if (total > MAX_ATTACHMENTS_BYTES) {
+      setValidationError(`Anexos totalizam ${formatSize(total)}, limite do Gmail é 25MB`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    setFiles(merged);
+    setValidationError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  function removeFile(index: number) {
+    setFiles(files.filter((_, i) => i !== index));
+  }
 
   function tryClose() {
     if (sending) return;
@@ -69,15 +102,22 @@ export function GmailComposerModal({ open, onClose, onSent }: Props) {
       setValidationError('Corpo do email é obrigatório');
       return;
     }
+    if (totalBytes > MAX_ATTACHMENTS_BYTES) {
+      setValidationError(`Anexos excedem 25MB (total: ${formatSize(totalBytes)})`);
+      return;
+    }
     setSending(true);
     try {
-      await gmailService.sendMessage({
-        to,
-        cc: cc.length > 0 ? cc : undefined,
-        bcc: bcc.length > 0 ? bcc : undefined,
-        subject: subject.trim(),
-        body,
-      });
+      await gmailService.sendMessage(
+        {
+          to,
+          cc: cc.length > 0 ? cc : undefined,
+          bcc: bcc.length > 0 ? bcc : undefined,
+          subject: subject.trim(),
+          body,
+        },
+        files.length > 0 ? files : undefined,
+      );
       toast.success('Email enviado');
       onSent?.();
       onClose();
@@ -197,6 +237,54 @@ export function GmailComposerModal({ open, onClose, onSent }: Props) {
               disabled={sending}
               className="w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
             />
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={onFilesPicked}
+                disabled={sending}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending}
+                className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                Anexar arquivo
+              </button>
+              {files.length > 0 && (
+                <span className="text-xs text-slate-500">
+                  {files.length} arquivo{files.length === 1 ? '' : 's'} · {formatSize(totalBytes)} / 25MB
+                </span>
+              )}
+            </div>
+            {files.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {files.map((f, i) => (
+                  <span
+                    key={`${f.name}-${i}`}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-700"
+                  >
+                    <span className="truncate max-w-[240px]" title={f.name}>{f.name}</span>
+                    <span className="text-slate-500">({formatSize(f.size)})</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      disabled={sending}
+                      className="rounded hover:bg-slate-200"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {validationError && (

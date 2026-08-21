@@ -146,6 +146,12 @@ public class GmailInboxService {
         String date = parser.extractHeader(headers, "Date");
         Long internal = toLong(msg.get("internalDate"));
 
+        List<com.financial.gmail.dto.inbox.AttachmentSummary> attachments =
+                parser.extractAttachments(payload).stream()
+                        .map(a -> new com.financial.gmail.dto.inbox.AttachmentSummary(
+                                a.id(), a.filename(), a.mimeType(), a.size()))
+                        .toList();
+
         return new MessageDetail(
                 (String) msg.get("id"),
                 from,
@@ -154,7 +160,8 @@ public class GmailInboxService {
                 parser.parseDate(date, internal),
                 parser.extractHtmlBody(payload),
                 labelIds,
-                parser.isUnread(labelIds)
+                parser.isUnread(labelIds),
+                attachments
         );
     }
 

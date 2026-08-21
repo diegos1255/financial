@@ -131,6 +131,37 @@ public class MessageParser {
         return labelIds != null && labelIds.contains("UNREAD");
     }
 
+    /**
+     * Percorre a arvore de parts do payload procurando anexos. Um anexo tem
+     * body.attachmentId presente e filename nao-vazio (o filename vazio =
+     * pedaco inline do multipart/alternative, nao anexo real).
+     */
+    public List<AttachmentInfo> extractAttachments(Map<String, Object> payload) {
+        List<AttachmentInfo> out = new ArrayList<>();
+        collectAttachments(payload, out);
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void collectAttachments(Map<String, Object> part, List<AttachmentInfo> out) {
+        if (part == null) return;
+        Map<String, Object> body = (Map<String, Object>) part.get("body");
+        String filename = part.get("filename") != null ? part.get("filename").toString() : null;
+        String attachmentId = body != null && body.get("attachmentId") != null
+                ? body.get("attachmentId").toString() : null;
+        if (attachmentId != null && filename != null && !filename.isBlank()) {
+            String mimeType = part.get("mimeType") != null ? part.get("mimeType").toString() : "application/octet-stream";
+            Integer size = body.get("size") instanceof Number n ? n.intValue() : null;
+            out.add(new AttachmentInfo(attachmentId, filename, mimeType, size));
+        }
+        List<Map<String, Object>> parts = (List<Map<String, Object>>) part.get("parts");
+        if (parts != null) {
+            for (Map<String, Object> child : parts) collectAttachments(child, out);
+        }
+    }
+
+    public record AttachmentInfo(String id, String filename, String mimeType, Integer size) {}
+
     private String escapeHtml(String s) {
         return s.replace("&", "&amp;")
                 .replace("<", "&lt;")
