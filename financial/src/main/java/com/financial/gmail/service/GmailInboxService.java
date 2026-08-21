@@ -60,6 +60,14 @@ public class GmailInboxService {
         return new PagedThreadsResponse(summaries, next);
     }
 
+    public PagedThreadsResponse searchThreads(String query, String pageToken, int pageSize) {
+        int size = Math.max(1, Math.min(pageSize, 50));
+        Map<String, Object> resp = api.listMessages(query, null, size, pageToken);
+        List<ThreadSummary> summaries = buildThreadSummaries(resp);
+        String next = (String) resp.get("nextPageToken");
+        return new PagedThreadsResponse(summaries, next);
+    }
+
     public ThreadDetail getThread(String threadId) {
         Map<String, Object> thread = api.getThread(threadId, "full");
         @SuppressWarnings("unchecked")

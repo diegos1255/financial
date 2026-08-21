@@ -119,4 +119,15 @@ export const gmailService = {
     const { data } = await api.post<SendMessageResponse>('/api/gmail/messages/send', request);
     return data;
   },
+
+  async searchThreads(
+    query: string,
+    pageToken?: string,
+    pageSize = 20,
+  ): Promise<PagedThreadsResponse> {
+    const { data } = await api.get<PagedThreadsResponse>('/api/gmail/search', {
+      params: { q: query, pageToken, pageSize },
+    });
+    return data;
+  },
 };

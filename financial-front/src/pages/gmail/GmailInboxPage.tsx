@@ -9,6 +9,7 @@ import { ThreadViewer } from './components/ThreadViewer';
 import { SelectionToolbar } from './components/SelectionToolbar';
 import { LabelFormModal } from './components/LabelFormModal';
 import { GmailComposerModal } from './components/GmailComposerModal';
+import { SearchBar } from './components/SearchBar';
 import { gmailService } from '../../services/gmailService';
 import { extractApiError } from '../../utils/apiError';
 import { useGmailNotifications } from '../../contexts/GmailNotificationsContext';
@@ -23,7 +24,8 @@ import {
 
 type ViewSource =
   | { kind: 'category'; value: GmailCategory }
-  | { kind: 'label'; value: string; name: string };
+  | { kind: 'label'; value: string; name: string }
+  | { kind: 'search'; value: string };
 
 type ListState = {
   threads: ThreadSummary[];
@@ -34,7 +36,9 @@ type ListState = {
 const CATEGORIES: GmailCategory[] = ['PRIMARY', 'SOCIAL', 'PROMOTIONS', 'UPDATES'];
 
 function keyOf(view: ViewSource): string {
-  return view.kind === 'category' ? `cat:${view.value}` : `label:${view.value}`;
+  if (view.kind === 'category') return `cat:${view.value}`;
+  if (view.kind === 'label') return `label:${view.value}`;
+  return `search:${view.value}`;
 }
 
 export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }) {
@@ -54,6 +58,8 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
   });
   const [confirmDeleteLabel, setConfirmDeleteLabel] = useState<LabelSummary | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [previousView, setPreviousView] = useState<ViewSource>({ kind: 'category', value: 'PRIMARY' });
   const { refreshTick, voiceEnabled, setVoiceEnabled } = useGmailNotifications();
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'denied',
@@ -99,9 +105,15 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
     if (append) setLoadingMore(true);
     else setLoadingList(true);
     try {
-      const page = target.kind === 'category'
-        ? await gmailService.listThreads(target.value, append ? state?.nextPageToken ?? undefined : undefined)
-        : await gmailService.listThreadsByLabel(target.value, append ? state?.nextPageToken ?? undefined : undefined);
+      const token = append ? state?.nextPageToken ?? undefined : undefined;
+      let page;
+      if (target.kind === 'category') {
+        page = await gmailService.listThreads(target.value, token);
+      } else if (target.kind === 'label') {
+        page = await gmailService.listThreadsByLabel(target.value, token);
+      } else {
+        page = await gmailService.searchThreads(target.value, token);
+      }
 
       setCache((prev) => {
         const existing = prev[key] ?? { threads: [], nextPageToken: null, loaded: false };
@@ -355,13 +367,38 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
     clearSelection();
   }
 
+  function handleSearchChange(query: string) {
+    setSearchQuery(query);
+    const trimmed = query.trim();
+    if (trimmed === '') {
+      // saindo da busca — volta pra view anterior
+      if (view.kind === 'search') {
+        setView(previousView);
+        setSelectedThread(null);
+        clearSelection();
+      }
+      return;
+    }
+    // guarda a view atual se ainda nao estava em busca
+    if (view.kind !== 'search') {
+      setPreviousView(view);
+    }
+    setView({ kind: 'search', value: trimmed });
+    setSelectedThread(null);
+    clearSelection();
+  }
+
   const userLabels = labels
     .filter((l) => l.type === 'user')
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const currentTitle = view.kind === 'category'
     ? CATEGORY_LABELS[view.value]
-    : view.name;
+    : view.kind === 'label'
+      ? view.name
+      : `Resultados: "${view.value}"`;
+
+  const inSearchMode = view.kind === 'search';
 
   return (
     <div>
@@ -370,6 +407,7 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
         subtitle={emailAddress ? `Conectado como ${emailAddress}` : 'Gmail'}
         actions={
           <div className="flex items-center gap-2">
+            <SearchBar value={searchQuery} onChange={handleSearchChange} />
             <button
               type="button"
               onClick={toggleVoice}
@@ -405,8 +443,11 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,220px)_minmax(0,380px)_1fr] gap-4">
-        {/* Sidebar de views (categorias + labels) */}
+      <div className={`grid grid-cols-1 gap-4 ${inSearchMode
+        ? 'lg:grid-cols-[minmax(0,380px)_1fr]'
+        : 'lg:grid-cols-[minmax(0,220px)_minmax(0,380px)_1fr]'}`}>
+        {/* Sidebar de views (categorias + labels) — escondida em modo busca */}
+        {!inSearchMode && (
         <div className="rounded-xl border border-slate-200 bg-white shadow-soft p-3 flex flex-col gap-4">
           <div>
             <p className="mb-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Categorias</p>
@@ -486,6 +527,7 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
             </ul>
           </div>
         </div>
+        )}
 
         {/* Lista de threads */}
         <div className="flex flex-col gap-2">
