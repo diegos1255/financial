@@ -5,6 +5,7 @@ import type {
   GmailBulkAction,
   GmailCategory,
   GmailStatus,
+  LabelSummary,
   PagedThreadsResponse,
   ThreadDetail,
   UnreadSummary,
@@ -32,6 +33,17 @@ export const gmailService = {
   ): Promise<PagedThreadsResponse> {
     const { data } = await api.get<PagedThreadsResponse>('/api/gmail/threads', {
       params: { category, pageToken, pageSize },
+    });
+    return data;
+  },
+
+  async listThreadsByLabel(
+    labelId: string,
+    pageToken?: string,
+    pageSize = 20,
+  ): Promise<PagedThreadsResponse> {
+    const { data } = await api.get<PagedThreadsResponse>('/api/gmail/threads', {
+      params: { labelId, pageToken, pageSize },
     });
     return data;
   },
@@ -74,5 +86,30 @@ export const gmailService = {
       threadIds,
     });
     return data;
+  },
+
+  async listLabels(includeStats = false): Promise<LabelSummary[]> {
+    const { data } = await api.get<LabelSummary[]>('/api/gmail/labels', {
+      params: { includeStats },
+    });
+    return data;
+  },
+
+  async createLabel(name: string): Promise<LabelSummary> {
+    const { data } = await api.post<LabelSummary>('/api/gmail/labels', { name });
+    return data;
+  },
+
+  async renameLabel(id: string, newName: string): Promise<LabelSummary> {
+    const { data } = await api.patch<LabelSummary>(`/api/gmail/labels/${id}`, { newName });
+    return data;
+  },
+
+  async deleteLabel(id: string): Promise<void> {
+    await api.delete(`/api/gmail/labels/${id}`);
+  },
+
+  async modifyThreadLabels(threadId: string, add: string[], remove: string[]): Promise<void> {
+    await api.post(`/api/gmail/threads/${threadId}/labels`, { add, remove });
   },
 };

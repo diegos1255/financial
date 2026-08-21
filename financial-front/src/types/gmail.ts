@@ -55,6 +55,14 @@ export type BulkActionResponse = {
   failedIds: string[];
 };
 
+export type LabelSummary = {
+  id: string;
+  name: string;
+  type: 'system' | 'user';
+  messagesUnread: number | null;
+  messagesTotal: number | null;
+};
+
 export const CATEGORY_LABELS: Record<GmailCategory, string> = {
   PRIMARY: 'Principal',
   SOCIAL: 'Social',

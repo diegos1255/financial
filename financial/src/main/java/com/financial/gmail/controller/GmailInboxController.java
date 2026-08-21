@@ -24,10 +24,15 @@ public class GmailInboxController {
 
     @GetMapping("/threads")
     public PagedThreadsResponse listThreads(
-            @RequestParam(defaultValue = "PRIMARY") GmailCategory category,
+            @RequestParam(required = false) GmailCategory category,
+            @RequestParam(required = false) String labelId,
             @RequestParam(required = false) String pageToken,
             @RequestParam(defaultValue = "20") int pageSize) {
-        return service.listThreads(category, pageToken, pageSize);
+        if (labelId != null && !labelId.isBlank()) {
+            return service.listThreadsByLabel(labelId, pageToken, pageSize);
+        }
+        GmailCategory cat = category != null ? category : GmailCategory.PRIMARY;
+        return service.listThreads(cat, pageToken, pageSize);
     }
 
     @GetMapping("/threads/{id}")

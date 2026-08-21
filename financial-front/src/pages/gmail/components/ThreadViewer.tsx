@@ -1,11 +1,14 @@
 import DOMPurify from 'dompurify';
 import { Mail, Trash2 } from 'lucide-react';
-import type { MessageDetail, ThreadDetail } from '../../../types/gmail';
+import { LabelPicker } from './LabelPicker';
+import type { LabelSummary, MessageDetail, ThreadDetail } from '../../../types/gmail';
 
 type Props = {
   thread: ThreadDetail;
+  labels: LabelSummary[];
   onTrash: () => void;
   onMarkUnread: () => void;
+  onApplyLabels: (add: string[], remove: string[]) => void;
   loading?: boolean;
 };
 
@@ -58,12 +61,22 @@ function MessageCard({ message }: { message: MessageDetail }) {
   );
 }
 
-export function ThreadViewer({ thread, onTrash, onMarkUnread, loading }: Props) {
+export function ThreadViewer({ thread, labels, onTrash, onMarkUnread, onApplyLabels, loading }: Props) {
+  // Coleta labels ativas em todas as mensagens da thread
+  const threadLabelIds = new Set<string>();
+  thread.messages.forEach((m) => m.labelIds.forEach((id) => threadLabelIds.add(id)));
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <h2 className="flex-1 text-lg font-semibold text-slate-900">{thread.subject}</h2>
         <div className="flex shrink-0 items-center gap-1">
+          <LabelPicker
+            labels={labels}
+            currentLabelIds={Array.from(threadLabelIds)}
+            onApply={onApplyLabels}
+            disabled={loading}
+          />
           <button
             type="button"
             onClick={onMarkUnread}

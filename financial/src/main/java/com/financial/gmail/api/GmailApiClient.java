@@ -79,6 +79,54 @@ public class GmailApiClient {
     }
 
     /**
+     * GET /labels — lista todas as labels do usuario (system + user)
+     */
+    public Map<String, Object> listLabels() {
+        return getJson(BASE_URL + "/labels");
+    }
+
+    /**
+     * POST /labels — cria uma label custom com o nome fornecido
+     */
+    public Map<String, Object> createLabel(String name) {
+        Map<String, Object> body = Map.of(
+                "name", name,
+                "labelListVisibility", "labelShow",
+                "messageListVisibility", "show"
+        );
+        return postJson(BASE_URL + "/labels", body);
+    }
+
+    /**
+     * PATCH /labels/{id} — atualiza (renomeia) uma label
+     */
+    public Map<String, Object> patchLabel(String labelId, String newName) {
+        String uri = BASE_URL + "/labels/" + labelId;
+        Map<String, Object> body = Map.of("name", newName);
+        return execute(() -> http.method(org.springframework.http.HttpMethod.PATCH)
+                .uri(uri)
+                .header("Authorization", "Bearer " + authService.getValidAccessToken())
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<Map<String, Object>>() {})
+        );
+    }
+
+    /**
+     * DELETE /labels/{id} — remove label custom (system labels rejeitadas pelo Google)
+     */
+    public void deleteLabel(String labelId) {
+        String uri = BASE_URL + "/labels/" + labelId;
+        execute(() -> http.delete()
+                .uri(uri)
+                .header("Authorization", "Bearer " + authService.getValidAccessToken())
+                .retrieve()
+                .toBodilessEntity()
+        );
+    }
+
+    /**
      * POST /threads/{id}/trash — move a thread inteira para a lixeira do Gmail.
      */
     public Map<String, Object> trashThread(String threadId) {
