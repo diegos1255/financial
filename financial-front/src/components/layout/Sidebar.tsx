@@ -7,6 +7,7 @@ import {
   DollarSign,
   Home,
   LogOut,
+  Mail,
   ShoppingCart,
   Tag,
   TrendingUp,
@@ -16,6 +17,7 @@ import type { LucideIcon } from 'lucide-react';
 import { menuService } from '../../services/menuService';
 import type { Menu } from '../../types/menu';
 import { useAuth } from '../../hooks/useAuth';
+import { useGmailNotifications } from '../../contexts/GmailNotificationsContext';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   home: Home,
@@ -25,6 +27,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   'shopping-cart': ShoppingCart,
   'trending-up': TrendingUp,
   briefcase: Briefcase,
+  mail: Mail,
 };
 
 function MenuIcon({ icon }: { icon: string | null }) {
@@ -45,10 +48,26 @@ function MenuSkeleton() {
   );
 }
 
+function badgeFor(route: string | null, gmailUnread: number): number {
+  if (route === '/email') return gmailUnread;
+  return 0;
+}
+
+function BadgeCount({ count }: { count: number }) {
+  if (count <= 0) return null;
+  const label = count > 99 ? '99+' : String(count);
+  return (
+    <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold tabular-nums">
+      {label}
+    </span>
+  );
+}
+
 export function Sidebar() {
   const [menus, setMenus] = useState<Menu[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { user, logout } = useAuth();
+  const { totalUnread } = useGmailNotifications();
 
   useEffect(() => {
     let cancelled = false;
@@ -91,6 +110,7 @@ export function Sidebar() {
                 >
                   <MenuIcon icon={item.icon} />
                   <span>{item.label}</span>
+                  <BadgeCount count={badgeFor(item.route, totalUnread)} />
                 </NavLink>
               </li>
             ))}

@@ -14,6 +14,7 @@ import { InvestmentsPage } from './pages/investments/InvestmentsPage';
 import { SalariesPage } from './pages/salaries/SalariesPage';
 import { ExpensesPage } from './pages/expenses/ExpensesPage';
 import { PjPage } from './pages/pj/PjPage';
+import { GmailGate } from './pages/gmail/GmailGate';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="/salaries" element={<SalariesPage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/pj" element={<PjPage />} />
+            <Route path="/email" element={<GmailGate />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

@@ -5,8 +5,8 @@ spring:
     name: financial
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
+      max-file-size: 25MB
+      max-request-size: 30MB
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:financial}
     username: ${POSTGRES_USER:financial}
@@ -61,6 +61,23 @@ market-price:
 
 features:
   investments-enabled: ${FEATURES_INVESTMENTS_ENABLED:true}
+
+gmail:
+  client-id: ${GMAIL_CLIENT_ID:}
+  client-secret: ${GMAIL_CLIENT_SECRET:}
+  redirect-uri: ${GMAIL_REDIRECT_URI:http://localhost/api/gmail/callback}
+  token-encryption-key: ${GMAIL_TOKEN_ENCRYPTION_KEY:}
+  auth-endpoint: https://accounts.google.com/o/oauth2/v2/auth
+  token-endpoint: https://oauth2.googleapis.com/token
+  revoke-endpoint: https://oauth2.googleapis.com/revoke
+  userinfo-endpoint: https://openidconnect.googleapis.com/v1/userinfo
+
+tts:
+  elevenlabs:
+    api-key: ${ELEVENLABS_API_KEY:}
+    voice-id: ${ELEVENLABS_VOICE_ID:}
+    model-id: ${ELEVENLABS_MODEL_ID:eleven_multilingual_v2}
+    endpoint: https://api.elevenlabs.io/v1/text-to-speech
 
 logging:
   level:
