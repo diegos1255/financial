@@ -34,7 +34,10 @@ export function AttachmentList({ messageId, attachments }: Props) {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [preview, setPreview] = useState<AttachmentSummary | null>(null);
 
-  if (attachments.length === 0) return null;
+  // Imagens embarcadas no HTML (cid:) tem inline=true e nao devem aparecer
+  // na lista de anexos — Gmail Web tambem esconde elas.
+  const visible = attachments.filter((a) => !a.inline);
+  if (visible.length === 0) return null;
 
   async function handleDownload(att: AttachmentSummary) {
     setDownloading(att.id);
@@ -65,10 +68,10 @@ export function AttachmentList({ messageId, attachments }: Props) {
       <div className="mt-3 border-t border-slate-100 pt-3">
         <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-slate-500">
           <Paperclip className="h-3.5 w-3.5" />
-          {attachments.length} anexo{attachments.length === 1 ? '' : 's'}
+          {visible.length} anexo{visible.length === 1 ? '' : 's'}
         </div>
         <div className="flex flex-wrap gap-2">
-          {attachments.map((att) => {
+          {visible.map((att) => {
             const Icon = iconFor(att.mimeType);
             const size = formatSize(att.size);
             return (

@@ -146,23 +146,77 @@ public class GmailInboxService {
         String date = parser.extractHeader(headers, "Date");
         Long internal = toLong(msg.get("internalDate"));
 
-        List<com.financial.gmail.dto.inbox.AttachmentSummary> attachments =
-                parser.extractAttachments(payload).stream()
-                        .map(a -> new com.financial.gmail.dto.inbox.AttachmentSummary(
-                                a.id(), a.filename(), a.mimeType(), a.size()))
-                        .toList();
+        String messageId = (String) msg.get("id");
+        List<com.financial.gmail.util.MessageParser.AttachmentInfo> rawAttachments =
+                parser.extractAttachments(payload);
+
+        String bodyHtml = parser.extractHtmlBody(payload);
+        // Reescreve <img src="cid:xxx"> pra URL do endpoint de download inline
+        bodyHtml = rewriteCidImages(bodyHtml, messageId, rawAttachments);
+
+        List<com.financial.gmail.dto.inbox.AttachmentSummary> attachments = rawAttachments.stream()
+                .map(a -> new com.financial.gmail.dto.inbox.AttachmentSummary(
+                        a.id(), a.filename(), a.mimeType(), a.size(), a.inline()))
+                .toList();
 
         return new MessageDetail(
-                (String) msg.get("id"),
+                messageId,
                 from,
                 parser.splitAddresses(to),
                 parser.splitAddresses(cc),
                 parser.parseDate(date, internal),
-                parser.extractHtmlBody(payload),
+                bodyHtml,
                 labelIds,
                 parser.isUnread(labelIds),
                 attachments
         );
+    }
+
+    /**
+     * Substitui `src="cid:xxx"` (imagens embarcadas via Content-ID) por URL do
+     * endpoint /api/gmail/messages/{msgId}/attachments/{attId}?inline=true.
+     * Se o cid nao tem match nos attachments do email, deixa a tag como estava
+     * (nao ha nada melhor a fazer sem quebrar o HTML).
+     */
+    private String rewriteCidImages(String html,
+                                     String messageId,
+                                     List<com.financial.gmail.util.MessageParser.AttachmentInfo> attachments) {
+        if (html == null || html.isEmpty()) return html;
+        if (!html.contains("cid:")) return html;
+
+        java.util.Map<String, com.financial.gmail.util.MessageParser.AttachmentInfo> byCid =
+                new java.util.HashMap<>();
+        for (var a : attachments) {
+            if (a.contentId() != null) byCid.put(a.contentId(), a);
+        }
+        if (byCid.isEmpty()) return html;
+
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                "(src\\s*=\\s*[\"'])cid:([^\"']+)([\"'])",
+                java.util.regex.Pattern.CASE_INSENSITIVE);
+        java.util.regex.Matcher m = pattern.matcher(html);
+        StringBuilder out = new StringBuilder();
+        while (m.find()) {
+            String cid = m.group(2);
+            var att = byCid.get(cid);
+            String replacement;
+            if (att != null) {
+                String encodedFilename = java.net.URLEncoder.encode(
+                        att.filename(), java.nio.charset.StandardCharsets.UTF_8);
+                String encodedMime = java.net.URLEncoder.encode(
+                        att.mimeType(), java.nio.charset.StandardCharsets.UTF_8);
+                String url = "/api/gmail/messages/" + messageId + "/attachments/" + att.id()
+                        + "?filename=" + encodedFilename
+                        + "&contentType=" + encodedMime
+                        + "&inline=true";
+                replacement = m.group(1) + url + m.group(3);
+            } else {
+                replacement = m.group(0);
+            }
+            m.appendReplacement(out, java.util.regex.Matcher.quoteReplacement(replacement));
+        }
+        m.appendTail(out);
+        return out.toString();
     }
 
     private String extractSubject(Map<String, Object> msg) {

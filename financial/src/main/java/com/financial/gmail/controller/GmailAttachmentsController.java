@@ -33,6 +33,7 @@ public class GmailAttachmentsController {
             @PathVariable("attachmentId") String attachmentId,
             @RequestParam("filename") String filename,
             @RequestParam(value = "contentType", required = false) String contentType,
+            @RequestParam(value = "inline", defaultValue = "false") boolean inline,
             HttpServletResponse response) throws IOException {
         String safeFilename = sanitizeFilename(filename);
         byte[] bytes = service.download(messageId, attachmentId);
@@ -41,9 +42,11 @@ public class GmailAttachmentsController {
         response.setContentType(type);
         response.setContentLength(bytes.length);
         String encoded = URLEncoder.encode(safeFilename, StandardCharsets.UTF_8).replace("+", "%20");
+        String disposition = inline ? "inline" : "attachment";
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + safeFilename + "\"; filename*=UTF-8''" + encoded);
-        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
+                disposition + "; filename=\"" + safeFilename + "\"; filename*=UTF-8''" + encoded);
+        // Cache curto pra inline (imagens em emails abertos varias vezes); sem cache pro download
+        response.setHeader(HttpHeaders.CACHE_CONTROL, inline ? "private, max-age=300" : "no-store");
         response.getOutputStream().write(bytes);
         response.getOutputStream().flush();
     }

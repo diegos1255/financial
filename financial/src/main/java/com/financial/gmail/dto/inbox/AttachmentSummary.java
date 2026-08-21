@@ -4,5 +4,6 @@ public record AttachmentSummary(
         String id,
         String filename,
         String mimeType,
-        Integer size
+        Integer size,
+        boolean inline
 ) {}

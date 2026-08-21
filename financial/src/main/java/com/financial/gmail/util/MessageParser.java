@@ -149,18 +149,41 @@ public class MessageParser {
         String filename = part.get("filename") != null ? part.get("filename").toString() : null;
         String attachmentId = body != null && body.get("attachmentId") != null
                 ? body.get("attachmentId").toString() : null;
-        if (attachmentId != null && filename != null && !filename.isBlank()) {
+
+        // Content-ID vem no header, formato "<abc123@dominio>" — precisa tirar os < >
+        List<Map<String, Object>> headers = (List<Map<String, Object>>) part.get("headers");
+        String rawContentId = extractHeader(headers, "Content-ID");
+        String contentId = null;
+        if (rawContentId != null && !rawContentId.isBlank()) {
+            contentId = rawContentId.trim();
+            if (contentId.startsWith("<") && contentId.endsWith(">")) {
+                contentId = contentId.substring(1, contentId.length() - 1);
+            }
+        }
+
+        // Aceita como "attachment" se tem attachmentId E (filename OU contentId).
+        // inline = tem contentId E filename ausente/vazio (imagem embarcada no HTML).
+        boolean hasFilename = filename != null && !filename.isBlank();
+        if (attachmentId != null && (hasFilename || contentId != null)) {
             String mimeType = part.get("mimeType") != null ? part.get("mimeType").toString() : "application/octet-stream";
             Integer size = body.get("size") instanceof Number n ? n.intValue() : null;
-            out.add(new AttachmentInfo(attachmentId, filename, mimeType, size));
+            boolean inline = contentId != null && !hasFilename;
+            String effectiveName = hasFilename
+                    ? filename
+                    : (contentId != null ? "inline-" + contentId : "anexo");
+            out.add(new AttachmentInfo(attachmentId, effectiveName, mimeType, size, contentId, inline));
         }
+
         List<Map<String, Object>> parts = (List<Map<String, Object>>) part.get("parts");
         if (parts != null) {
             for (Map<String, Object> child : parts) collectAttachments(child, out);
         }
     }
 
-    public record AttachmentInfo(String id, String filename, String mimeType, Integer size) {}
+    public record AttachmentInfo(
+            String id, String filename, String mimeType, Integer size,
+            String contentId, boolean inline
+    ) {}
 
     private String escapeHtml(String s) {
         return s.replace("&", "&amp;")

@@ -24,6 +24,7 @@ export type AttachmentSummary = {
   filename: string;
   mimeType: string;
   size: number | null;
+  inline: boolean;
 };
 
 export type MessageDetail = {
