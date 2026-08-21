@@ -13,6 +13,7 @@ import com.financial.exception.ResourceConflictException;
 import com.financial.exception.ResourceNotFoundException;
 import com.financial.gmail.exception.GmailInvalidStateException;
 import com.financial.gmail.exception.GmailReauthRequiredException;
+import com.financial.gmail.exception.GmailSendException;
 import com.financial.gmail.exception.GmailTokenExchangeException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -129,6 +130,13 @@ public class ApiErrorHandler {
     public ResponseEntity<ApiError> handleGmailReauthRequired(GmailReauthRequiredException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiError.of(401, "GMAIL_REAUTH_REQUIRED", e.getMessage()));
+    }
+
+    @ExceptionHandler(GmailSendException.class)
+    public ResponseEntity<ApiError> handleGmailSend(GmailSendException e) {
+        log.warn("Gmail send failed", e);
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiError.of(502, "GMAIL_SEND_FAILED", e.getMessage()));
     }
 
     @ExceptionHandler(RefreshTokenInvalidException.class)

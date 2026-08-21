@@ -12,9 +12,10 @@ export function LoginPage() {
   const [loginValue, setLoginValue] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState<boolean>(
-    () => localStorage.getItem('remember_me') === 'true'
-  );
+  // "Manter-se logado" — ocultado a pedido do Diego. Descomente para reativar.
+  // const [rememberMe, setRememberMe] = useState<boolean>(
+  //   () => localStorage.getItem('remember_me') === 'true'
+  // );
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -28,7 +29,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await login({ login: loginValue.trim(), password });
-      localStorage.setItem('remember_me', String(rememberMe));
+      // localStorage.setItem('remember_me', String(rememberMe));
       navigate('/dashboard', { replace: true });
     } catch (err) {
       const apiError = (err as { response?: { data?: ApiError } }).response?.data;
@@ -87,6 +88,8 @@ export function LoginPage() {
             </div>
           </div>
 
+          {/* "Manter-se logado" — ocultado a pedido do Diego. Descomente para reativar. */}
+          {/*
           <label className="flex items-center gap-2 cursor-pointer select-none -mt-1">
             <input
               type="checkbox"
@@ -97,6 +100,7 @@ export function LoginPage() {
             />
             <span className="text-sm text-slate-600">Manter-se logado</span>
           </label>
+          */}
 
           {errorMessage && (
             <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

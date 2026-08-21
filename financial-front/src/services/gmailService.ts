@@ -7,6 +7,8 @@ import type {
   GmailStatus,
   LabelSummary,
   PagedThreadsResponse,
+  SendMessageRequest,
+  SendMessageResponse,
   ThreadDetail,
   UnreadSummary,
 } from '../types/gmail';
@@ -111,5 +113,10 @@ export const gmailService = {
 
   async modifyThreadLabels(threadId: string, add: string[], remove: string[]): Promise<void> {
     await api.post(`/api/gmail/threads/${threadId}/labels`, { add, remove });
+  },
+
+  async sendMessage(request: SendMessageRequest): Promise<SendMessageResponse> {
+    const { data } = await api.post<SendMessageResponse>('/api/gmail/messages/send', request);
+    return data;
   },
 };

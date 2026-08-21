@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Bell, BellOff, Pencil, Plus, RefreshCw, Tag, Trash2, Volume2, VolumeX } from 'lucide-react';
+import { Bell, BellOff, Pencil, PenSquare, Plus, RefreshCw, Tag, Trash2, Volume2, VolumeX } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
@@ -8,6 +8,7 @@ import { ThreadListItem } from './components/ThreadListItem';
 import { ThreadViewer } from './components/ThreadViewer';
 import { SelectionToolbar } from './components/SelectionToolbar';
 import { LabelFormModal } from './components/LabelFormModal';
+import { GmailComposerModal } from './components/GmailComposerModal';
 import { gmailService } from '../../services/gmailService';
 import { extractApiError } from '../../utils/apiError';
 import { useGmailNotifications } from '../../contexts/GmailNotificationsContext';
@@ -52,6 +53,7 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
     editing: null,
   });
   const [confirmDeleteLabel, setConfirmDeleteLabel] = useState<LabelSummary | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const { refreshTick, voiceEnabled, setVoiceEnabled } = useGmailNotifications();
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'denied',
@@ -391,6 +393,10 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
                 <Bell className="h-4 w-4" />
               </span>
             )}
+            <Button onClick={() => setComposerOpen(true)}>
+              <PenSquare className="h-4 w-4" />
+              Novo email
+            </Button>
             <Button variant="ghost" onClick={handleRefresh} disabled={loadingList}>
               <RefreshCw className={`h-4 w-4 ${loadingList ? 'animate-spin' : ''}`} />
               Atualizar
@@ -586,6 +592,11 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
         editing={labelModal.editing}
         onClose={() => setLabelModal({ open: false, editing: null })}
         onSaved={loadLabels}
+      />
+
+      <GmailComposerModal
+        open={composerOpen}
+        onClose={() => setComposerOpen(false)}
       />
     </div>
   );

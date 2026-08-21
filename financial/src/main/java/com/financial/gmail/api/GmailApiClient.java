@@ -146,6 +146,15 @@ public class GmailApiClient {
         return postJson(BASE_URL + "/threads/" + threadId + "/modify", body);
     }
 
+    /**
+     * POST /messages/send — body: { raw: base64url(mime_message) }
+     * Retorna { id, threadId, labelIds, ... } do email enviado.
+     */
+    public Map<String, Object> sendMessage(String rawBase64Url) {
+        Map<String, Object> body = Map.of("raw", rawBase64Url);
+        return postJson(BASE_URL + "/messages/send", body);
+    }
+
     // ---- HTTP helpers ----
 
     private Map<String, Object> getJson(String uri) {

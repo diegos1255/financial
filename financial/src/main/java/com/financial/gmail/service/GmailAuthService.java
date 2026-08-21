@@ -45,6 +45,14 @@ public class GmailAuthService {
                 .orElseGet(GmailStatusResponse::notConnected);
     }
 
+    @Transactional(readOnly = true)
+    public String getConnectedEmailAddress() {
+        UUID userId = CurrentUser.id();
+        return repository.findByUserId(userId)
+                .map(GmailCredential::getEmailAddress)
+                .orElseThrow(() -> new GmailReauthRequiredException("Gmail não conectado"));
+    }
+
     public String buildAuthorizationUrl(String state) {
         return oauthClient.buildAuthorizationUrl(state);
     }

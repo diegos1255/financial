@@ -63,6 +63,19 @@ export type LabelSummary = {
   messagesTotal: number | null;
 };
 
+export type SendMessageRequest = {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  body: string;
+};
+
+export type SendMessageResponse = {
+  messageId: string;
+  threadId: string;
+};
+
 export const CATEGORY_LABELS: Record<GmailCategory, string> = {
   PRIMARY: 'Principal',
   SOCIAL: 'Social',
