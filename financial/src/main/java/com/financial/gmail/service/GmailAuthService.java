@@ -109,7 +109,14 @@ public class GmailAuthService {
      * Retorna um access token válido, refreshando se necessário.
      * Se o refresh falhar (invalid_grant, revogado, expirado), joga {@link GmailReauthRequiredException}
      * e apaga a credencial pra forçar reconexão.
+     *
+     * noRollbackFor: o {@link GmailReauthRequiredException} nao deve reverter o
+     * {@code repository.delete(credential)}. Sem isso, o Google rejeita o token,
+     * a gente apaga a credencial e depois o rollback do @Transactional a
+     * recolocaria — /status continuaria retornando connected=true e o front
+     * ficaria em loop.
      */
+    @Transactional(noRollbackFor = GmailReauthRequiredException.class)
     public String getValidAccessToken() {
         UUID userId = CurrentUser.id();
         GmailCredential credential = repository.findByUserId(userId)

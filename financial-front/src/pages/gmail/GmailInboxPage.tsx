@@ -11,7 +11,14 @@ import { LabelFormModal } from './components/LabelFormModal';
 import { GmailComposerModal } from './components/GmailComposerModal';
 import { SearchBar } from './components/SearchBar';
 import { gmailService } from '../../services/gmailService';
-import { extractApiError } from '../../utils/apiError';
+import { extractApiError, isGmailReauthError } from '../../utils/apiError';
+
+function toastError(err: unknown, fallback: string) {
+  // Silencia cascata de toasts quando o refresh token do Gmail expirou —
+  // o GmailGate ja mostra um toast unico e move o user pro ConnectPage.
+  if (isGmailReauthError(err)) return;
+  toast.error(extractApiError(err, fallback));
+}
 import { useGmailNotifications } from '../../contexts/GmailNotificationsContext';
 import {
   CATEGORY_LABELS,
@@ -127,7 +134,7 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
         };
       });
     } catch (err) {
-      toast.error(extractApiError(err, 'Falha ao listar emails.'));
+      toastError(err, 'Falha ao listar emails.');
     } finally {
       setLoadingList(false);
       setLoadingMore(false);
@@ -164,7 +171,7 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
         }));
       }
     } catch (err) {
-      toast.error(extractApiError(err, 'Falha ao carregar email.'));
+      toastError(err, 'Falha ao carregar email.');
     } finally {
       setLoadingThread(false);
     }
@@ -230,7 +237,7 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
       setSelectedIds(new Set(selectedIds));
       toast.success(action === 'trash' ? 'Movido para lixeira' : 'Marcado como não-lido');
     } catch (err) {
-      toast.error(extractApiError(err, 'Falha ao executar ação.'));
+      toastError(err, 'Falha ao executar ação.');
     } finally {
       setActionLoading(false);
     }
@@ -258,7 +265,7 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
       if (result.failedIds.length === 0) toast.success(msg);
       else toast.error(msg);
     } catch (err) {
-      toast.error(extractApiError(err, 'Falha ao executar ação em lote.'));
+      toastError(err, 'Falha ao executar ação em lote.');
     } finally {
       setActionLoading(false);
     }
@@ -308,7 +315,7 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
       invalidateLabelCaches([...add, ...remove]);
       toast.success('Labels aplicadas');
     } catch (err) {
-      toast.error(extractApiError(err, 'Falha ao aplicar labels.'));
+      toastError(err, 'Falha ao aplicar labels.');
     } finally {
       setActionLoading(false);
     }
@@ -335,7 +342,7 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
       if (failedCount === 0) toast.success(msg);
       else toast.error(msg);
     } catch (err) {
-      toast.error(extractApiError(err, 'Falha ao aplicar labels em lote.'));
+      toastError(err, 'Falha ao aplicar labels em lote.');
     } finally {
       setActionLoading(false);
     }
@@ -354,7 +361,7 @@ export function GmailInboxPage({ emailAddress }: { emailAddress: string | null }
       setConfirmDeleteLabel(null);
       loadLabels();
     } catch (err) {
-      toast.error(extractApiError(err, 'Falha ao remover label.'));
+      toastError(err, 'Falha ao remover label.');
     } finally {
       setActionLoading(false);
     }

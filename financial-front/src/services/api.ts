@@ -18,6 +18,7 @@ const PUBLIC_PATHS = ['/', '/login', '/signup', '/unauthorized', '/session-expir
 
 let refreshing = false;
 let failedQueue: Array<{ resolve: () => void; reject: (err: unknown) => void }> = [];
+let lastReauthDispatch = 0;
 
 function processQueue(error: unknown) {
   failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve()));
@@ -39,6 +40,20 @@ api.interceptors.response.use(
       const isOnPublicRoute = PUBLIC_PATHS.includes(window.location.pathname);
 
       if (isOnPublicRoute) return Promise.reject(error);
+
+      // Gmail: refresh token do Google expirou/foi revogado (comum após 7 dias
+      // em apps nao-verificadas). Nao mexe na auth do sistema — deixa a pagina
+      // do Gmail lidar (gate refetcha status e mostra "Conectar Gmail").
+      // Dedup: quando o gate carrega, varias APIs Gmail rodam em paralelo e
+      // todas retornam 401 juntas — dispara evento so uma vez a cada 5s.
+      if (code === 'GMAIL_REAUTH_REQUIRED') {
+        const now = Date.now();
+        if (now - lastReauthDispatch > 5000) {
+          lastReauthDispatch = now;
+          window.dispatchEvent(new CustomEvent('gmail-reauth-required'));
+        }
+        return Promise.reject(error);
+      }
 
       if (code === 'TOKEN_EXPIRED') {
         const originalRequest = error.config;

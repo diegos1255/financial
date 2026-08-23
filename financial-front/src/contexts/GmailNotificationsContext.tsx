@@ -102,11 +102,20 @@ export function GmailNotificationsProvider({ children }: { children: ReactNode }
     () => localStorage.getItem(VOICE_ENABLED_KEY) !== 'false',
   );
   const [elevenlabsAvailable, setElevenlabsAvailable] = useState(false);
+  const [pollingKey, setPollingKey] = useState(0);
 
   useEffect(() => {
     if (!user) return;
     ttsService.isEnabled().then(setElevenlabsAvailable);
   }, [user]);
+
+  useEffect(() => {
+    function onReconnect() {
+      setPollingKey((k) => k + 1);
+    }
+    window.addEventListener('gmail-reconnected', onReconnect);
+    return () => window.removeEventListener('gmail-reconnected', onReconnect);
+  }, []);
 
   function setVoiceEnabled(enabled: boolean) {
     setVoiceEnabledState(enabled);
@@ -165,11 +174,24 @@ export function GmailNotificationsProvider({ children }: { children: ReactNode }
 
     tick();
     const interval = window.setInterval(tick, POLL_INTERVAL_MS);
+
+    // Se o Gmail perder auth (refresh token do Google expirou), para o polling
+    // pra evitar cascata de 401 -> toasts -> rate limit. Volta quando user
+    // reconectar (GmailGate atualiza status e o context remount pelo user).
+    function onReauth() {
+      cancelled = true;
+      window.clearInterval(interval);
+      setIsConnected(false);
+      setTotalUnread(0);
+    }
+    window.addEventListener('gmail-reauth-required', onReauth);
+
     return () => {
       cancelled = true;
       window.clearInterval(interval);
+      window.removeEventListener('gmail-reauth-required', onReauth);
     };
-  }, [user, voiceEnabled, elevenlabsAvailable]);
+  }, [user, voiceEnabled, elevenlabsAvailable, pollingKey]);
 
   return (
     <GmailNotificationsContext.Provider
