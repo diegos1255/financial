@@ -12,6 +12,7 @@ public class ChatProperties {
 
     private Gemini gemini = new Gemini();
     private Rag rag = new Rag();
+    private Query query = new Query();
 
     public boolean isEnabled() {
         return gemini.apiKey != null && !gemini.apiKey.isBlank();
@@ -22,6 +23,9 @@ public class ChatProperties {
 
     public Rag getRag() { return rag; }
     public void setRag(Rag rag) { this.rag = rag; }
+
+    public Query getQuery() { return query; }
+    public void setQuery(Query query) { this.query = query; }
 
     public static class Gemini {
         private String apiKey;
@@ -75,5 +79,20 @@ public class ChatProperties {
 
         public long getThrottleMs() { return throttleMs; }
         public void setThrottleMs(long throttleMs) { this.throttleMs = throttleMs; }
+    }
+
+    public static class Query {
+        private int rateLimitPerHour = 20;
+        private double temperature = 0.2;
+        private int maxOutputTokens = 1024;
+
+        public int getRateLimitPerHour() { return rateLimitPerHour; }
+        public void setRateLimitPerHour(int rateLimitPerHour) { this.rateLimitPerHour = rateLimitPerHour; }
+
+        public double getTemperature() { return temperature; }
+        public void setTemperature(double temperature) { this.temperature = temperature; }
+
+        public int getMaxOutputTokens() { return maxOutputTokens; }
+        public void setMaxOutputTokens(int maxOutputTokens) { this.maxOutputTokens = maxOutputTokens; }
     }
 }

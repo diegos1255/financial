@@ -97,6 +97,10 @@ chat:
       - "01-database-modeling.md"
     # gemini-embedding-001 free tier: 100 embeddings/min. 700ms/req = ~85 rpm com margem.
     throttle-ms: 700
+  query:
+    rate-limit-per-hour: 20
+    temperature: 0.2
+    max-output-tokens: 1024
 
 logging:
   level:
