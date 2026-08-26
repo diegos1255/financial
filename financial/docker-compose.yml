@@ -99,8 +99,14 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       CHAT_RAG_TOP_K: ${CHAT_RAG_TOP_K:-5}
       CHAT_RAG_MIN_SCORE: ${CHAT_RAG_MIN_SCORE:-0.55}
+      CHAT_RAG_CORPUS_PATH: /app/docs
     ports:
       - "8080:8080"
+    volumes:
+      # Docs vivem no workspace Claude, um nivel acima. Read-only pra
+      # ingestion do RAG (WORK-27). Sobrescreva CHAT_RAG_CORPUS_HOST_PATH
+      # no .env se o layout for diferente.
+      - ${CHAT_RAG_CORPUS_HOST_PATH:-../../claude/financial/docs}:/app/docs:ro
     depends_on:
       postgres:
         condition: service_healthy

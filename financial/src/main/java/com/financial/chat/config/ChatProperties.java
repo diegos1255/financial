@@ -26,8 +26,15 @@ public class ChatProperties {
     public static class Gemini {
         private String apiKey;
         private String baseUrl = "https://generativelanguage.googleapis.com/v1beta";
-        private String embeddingModel = "text-embedding-004";
+        // gemini-embedding-001: modelo GA atual. Default eh 3072 dims, mas
+        // aceita outputDimensionality pra reduzir. Usamos 768 pra bater com a
+        // coluna vector(768) da tabela chat_document_chunks.
+        private String embeddingModel = "gemini-embedding-001";
+        private int embeddingDimensions = 768;
         private String chatModel = "gemini-1.5-flash";
+
+        public int getEmbeddingDimensions() { return embeddingDimensions; }
+        public void setEmbeddingDimensions(int embeddingDimensions) { this.embeddingDimensions = embeddingDimensions; }
 
         public String getApiKey() { return apiKey; }
         public void setApiKey(String apiKey) { this.apiKey = apiKey; }
@@ -46,6 +53,10 @@ public class ChatProperties {
         private int topK = 5;
         private double minScore = 0.55;
         private int chunkMaxTokens = 800;
+        private String corpusPath = "/app/docs";
+        private java.util.List<String> corpusWhitelist = java.util.List.of(
+                "specs/", "02-development-plan.md", "01-database-modeling.md");
+        private long throttleMs = 150;
 
         public int getTopK() { return topK; }
         public void setTopK(int topK) { this.topK = topK; }
@@ -55,5 +66,14 @@ public class ChatProperties {
 
         public int getChunkMaxTokens() { return chunkMaxTokens; }
         public void setChunkMaxTokens(int chunkMaxTokens) { this.chunkMaxTokens = chunkMaxTokens; }
+
+        public String getCorpusPath() { return corpusPath; }
+        public void setCorpusPath(String corpusPath) { this.corpusPath = corpusPath; }
+
+        public java.util.List<String> getCorpusWhitelist() { return corpusWhitelist; }
+        public void setCorpusWhitelist(java.util.List<String> corpusWhitelist) { this.corpusWhitelist = corpusWhitelist; }
+
+        public long getThrottleMs() { return throttleMs; }
+        public void setThrottleMs(long throttleMs) { this.throttleMs = throttleMs; }
     }
 }

@@ -43,11 +43,14 @@ public class SecurityConfig {
     };
 
     // Auth endpoints don't need CSRF — no existing session/token at that point
+    // /api/chat/rag/reindex: operacao admin idempotente (sem side effect real,
+    // sem PII vazada) chamada manualmente pelo dono. Custo CSRF > risco.
     private static final String[] CSRF_EXCLUDED = {
             "/api/auth/login",
             "/api/auth/logout",
             "/api/auth/signup",
-            "/api/auth/refresh"
+            "/api/auth/refresh",
+            "/api/chat/rag/reindex"
     };
 
     @Bean
