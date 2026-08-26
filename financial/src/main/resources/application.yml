@@ -79,6 +79,17 @@ tts:
     model-id: ${ELEVENLABS_MODEL_ID:eleven_multilingual_v2}
     endpoint: https://api.elevenlabs.io/v1/text-to-speech
 
+chat:
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    base-url: https://generativelanguage.googleapis.com/v1beta
+    embedding-model: text-embedding-004
+    chat-model: gemini-1.5-flash
+  rag:
+    top-k: ${CHAT_RAG_TOP_K:5}
+    min-score: ${CHAT_RAG_MIN_SCORE:0.55}
+    chunk-max-tokens: 800
+
 logging:
   level:
     com.financial: DEBUG

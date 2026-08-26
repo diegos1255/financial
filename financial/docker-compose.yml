@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: financial-postgres
     restart: unless-stopped
     environment:
@@ -11,6 +11,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - financial-postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -95,6 +96,9 @@ services:
       GMAIL_TOKEN_ENCRYPTION_KEY: ${GMAIL_TOKEN_ENCRYPTION_KEY:-}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
       ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CHAT_RAG_TOP_K: ${CHAT_RAG_TOP_K:-5}
+      CHAT_RAG_MIN_SCORE: ${CHAT_RAG_MIN_SCORE:-0.55}
     ports:
       - "8080:8080"
     depends_on:
