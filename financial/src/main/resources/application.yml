@@ -85,7 +85,7 @@ chat:
     base-url: https://generativelanguage.googleapis.com/v1beta
     embedding-model: gemini-embedding-001
     embedding-dimensions: 768
-    chat-model: gemini-1.5-flash
+    chat-model: gemini-3.5-flash
   rag:
     top-k: ${CHAT_RAG_TOP_K:5}
     min-score: ${CHAT_RAG_MIN_SCORE:0.55}
@@ -100,7 +100,7 @@ chat:
   query:
     rate-limit-per-hour: 20
     temperature: 0.2
-    max-output-tokens: 1024
+    max-output-tokens: 2048
 
 logging:
   level:

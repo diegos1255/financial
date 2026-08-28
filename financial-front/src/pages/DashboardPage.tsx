@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, PieChart as PieIcon, Receipt, Wallet } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Eye, EyeOff, PieChart as PieIcon, Receipt, Wallet } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 import { KpiCard } from '../components/ui/KpiCard';
 import { PieChart } from '../components/ui/PieChart';
@@ -14,6 +14,7 @@ import type { InvestmentPortfolioResponse } from '../types/investment';
 import { formatCurrency } from '../utils/currency';
 import { MONTHS, monthLabel, yearRange } from '../utils/months';
 import { extractApiError } from '../utils/apiError';
+import { useValuesVisibility } from '../hooks/useValuesVisibility';
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -51,6 +52,7 @@ export function DashboardPage() {
   const [prevMonthTaxes, setPrevMonthTaxes] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { visible, toggle, mask } = useValuesVisibility();
 
   const prevMonth = month === 1 ? 12 : month - 1;
   const prevYear = month === 1 ? year - 1 : year;
@@ -109,6 +111,15 @@ export function DashboardPage() {
         subtitle={`Visão geral do mês ${monthLabel(month)}`}
         actions={
           <>
+            <button
+              type="button"
+              onClick={toggle}
+              title={visible ? 'Ocultar valores' : 'Mostrar valores'}
+              aria-label={visible ? 'Ocultar valores' : 'Mostrar valores'}
+              className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-accent transition-colors"
+            >
+              {visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </button>
             <Select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
               {MONTHS.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -136,36 +147,36 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KpiCard
           title="Salário"
-          value={formatCurrency(balance?.salary ?? 0)}
+          value={mask(formatCurrency(balance?.salary ?? 0))}
           icon={<ArrowUpCircle className="h-5 w-5" />}
           variant="neutral"
           subtitle={loading ? 'Carregando...' : undefined}
         />
         <KpiCard
           title="Total de Despesas"
-          value={formatCurrency(balance?.totalExpenses ?? 0)}
+          value={mask(formatCurrency(balance?.totalExpenses ?? 0))}
           icon={<ArrowDownCircle className="h-5 w-5" />}
           variant="neutral"
           subtitle={
             balance ? (
               <div className="grid grid-cols-2 gap-1.5">
-                <BreakdownChip tone="blue" label="Fixas" value={formatCurrency(balance.breakdown.fixed)} />
-                <BreakdownChip tone="violet" label="Variáveis" value={formatCurrency(balance.breakdown.variable)} />
-                <BreakdownChip tone="emerald" label="Pagas" value={formatCurrency(balance.breakdown.installmentsPaid)} />
-                <BreakdownChip tone="amber" label="Pendentes" value={formatCurrency(balance.breakdown.installmentsPending)} />
+                <BreakdownChip tone="blue" label="Fixas" value={mask(formatCurrency(balance.breakdown.fixed))} />
+                <BreakdownChip tone="violet" label="Variáveis" value={mask(formatCurrency(balance.breakdown.variable))} />
+                <BreakdownChip tone="emerald" label="Pagas" value={mask(formatCurrency(balance.breakdown.installmentsPaid))} />
+                <BreakdownChip tone="amber" label="Pendentes" value={mask(formatCurrency(balance.breakdown.installmentsPending))} />
               </div>
             ) : undefined
           }
         />
         <KpiCard
           title="Saldo"
-          value={formatCurrency(balance?.balance ?? 0)}
+          value={mask(formatCurrency(balance?.balance ?? 0))}
           icon={<Wallet className="h-5 w-5" />}
           variant={balanceVariant}
         />
         <KpiCard
           title="Impostos PJ"
-          value={formatCurrency(prevMonthTaxes)}
+          value={mask(formatCurrency(prevMonthTaxes))}
           icon={<Receipt className="h-5 w-5" />}
           variant="negative"
           subtitle={`Referente a ${monthLabel(prevMonth)}/${prevYear}`}
@@ -190,6 +201,7 @@ export function DashboardPage() {
             }))}
             centerTotal={totalByCategory}
             centerLabel="SAÍDAS NO MÊS"
+            centerValueOverride={visible ? undefined : mask('')}
             onSliceClick={handleSliceClick}
           />
         </div>

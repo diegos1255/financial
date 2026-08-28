@@ -46,7 +46,9 @@ public class GeminiChatClient {
                 )
         );
 
-        int maxAttempts = 2;
+        // Modelos Flash as vezes retornam 503 "high demand" — 4 tentativas com
+        // backoff exponencial (2s, 4s, 8s, 16s) da margem pra a fila esvaziar.
+        int maxAttempts = 4;
         long backoffMs = 2000;
         HttpStatusCode lastStatus = null;
         Exception lastError = null;

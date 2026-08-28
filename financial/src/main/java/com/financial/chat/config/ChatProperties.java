@@ -35,7 +35,11 @@ public class ChatProperties {
         // coluna vector(768) da tabela chat_document_chunks.
         private String embeddingModel = "gemini-embedding-001";
         private int embeddingDimensions = 768;
-        private String chatModel = "gemini-1.5-flash";
+        // gemini-3.5-flash: nao lite. Lite era fraco em seguir instrucoes complexas
+        // e copiava texto tecnico das specs sem traduzir pra "instrucoes de UI".
+        // Flash regular tem raciocinio suficiente pra transformar contexto tecnico
+        // em resposta amigavel de usuario.
+        private String chatModel = "gemini-3.5-flash";
 
         public int getEmbeddingDimensions() { return embeddingDimensions; }
         public void setEmbeddingDimensions(int embeddingDimensions) { this.embeddingDimensions = embeddingDimensions; }
