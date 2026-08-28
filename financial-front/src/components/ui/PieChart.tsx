@@ -13,6 +13,8 @@ type PieChartProps = {
   data: Slice[];
   centerTotal?: number;
   centerLabel?: string;
+  /** Se fornecido, sobrescreve o texto do centro (usado pra mascarar valores). */
+  centerValueOverride?: string;
   emptyMessage?: string;
   onSliceClick?: (categoryId: string, categoryName: string) => void;
 };
@@ -48,6 +50,7 @@ export function PieChart({
   data,
   centerTotal,
   centerLabel = 'SAÍDAS NO MÊS',
+  centerValueOverride,
   emptyMessage = 'Sem dados para o período.',
   onSliceClick,
 }: PieChartProps) {
@@ -108,7 +111,7 @@ export function PieChart({
               {centerLabel}
             </span>
             <span className="mt-1 text-lg font-semibold text-slate-900">
-              {formatCurrency(centerTotal)}
+              {centerValueOverride ?? formatCurrency(centerTotal)}
             </span>
           </div>
         )}

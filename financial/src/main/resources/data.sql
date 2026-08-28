@@ -1,3 +1,11 @@
+-- Indice HNSW pra similarity search dos chunks do RAG (WORK-26).
+-- A extensao pgvector eh criada pelo init-script do container Postgres
+-- (postgres-init/01-pgvector.sql), rodando antes do Hibernate criar a tabela.
+-- Este indice roda AQUI (data.sql = defer-datasource-init=true) porque a
+-- tabela precisa existir primeiro, o que so acontece apos o DDL do Hibernate.
+CREATE INDEX IF NOT EXISTS idx_chat_chunks_embedding
+    ON chat_document_chunks USING hnsw (embedding vector_cosine_ops);
+
 -- Seed idempotente da tabela menus.
 -- Como nao temos UNIQUE em label (e nao queremos adicionar via migration), usamos WHERE NOT EXISTS.
 

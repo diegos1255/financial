@@ -4,6 +4,7 @@ import { Topbar } from './Topbar';
 import { IdleWarningModal } from '../ui/IdleWarningModal';
 import { useIdleLogout } from '../../hooks/useIdleLogout';
 import { GmailNotificationsProvider } from '../../contexts/GmailNotificationsContext';
+import { ChatWidget } from '../chat/ChatWidget';
 
 export function ProtectedLayout() {
   const { showWarning, secondsLeft, continueSession } = useIdleLogout(30);
@@ -23,6 +24,7 @@ export function ProtectedLayout() {
           secondsLeft={secondsLeft}
           onContinue={continueSession}
         />
+        <ChatWidget />
       </div>
     </GmailNotificationsProvider>
   );

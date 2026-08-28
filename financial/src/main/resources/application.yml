@@ -79,6 +79,29 @@ tts:
     model-id: ${ELEVENLABS_MODEL_ID:eleven_multilingual_v2}
     endpoint: https://api.elevenlabs.io/v1/text-to-speech
 
+chat:
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    base-url: https://generativelanguage.googleapis.com/v1beta
+    embedding-model: gemini-embedding-001
+    embedding-dimensions: 768
+    chat-model: gemini-3.5-flash
+  rag:
+    top-k: ${CHAT_RAG_TOP_K:5}
+    min-score: ${CHAT_RAG_MIN_SCORE:0.55}
+    chunk-max-tokens: 800
+    corpus-path: ${CHAT_RAG_CORPUS_PATH:/app/docs}
+    corpus-whitelist:
+      - "specs/"
+      - "02-development-plan.md"
+      - "01-database-modeling.md"
+    # gemini-embedding-001 free tier: 100 embeddings/min. 700ms/req = ~85 rpm com margem.
+    throttle-ms: 700
+  query:
+    rate-limit-per-hour: 20
+    temperature: 0.2
+    max-output-tokens: 2048
+
 logging:
   level:
     com.financial: DEBUG
