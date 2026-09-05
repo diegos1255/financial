@@ -8,6 +8,7 @@ import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { salaryService } from '../../services/salaryService';
 import { bankAccountService } from '../../services/bankAccountService';
 import { extractApiError } from '../../utils/apiError';
+import { celebrateSuccess } from '../../utils/celebrate';
 import { formatCurrency } from '../../utils/currency';
 import { MONTHS, monthLabel, yearRange } from '../../utils/months';
 import type { Salary } from '../../types/salary';
@@ -87,6 +88,8 @@ export function SalaryFormModal({ open, onClose, onSaved, editing }: Props) {
       } else {
         await salaryService.create(payload);
         toast.success('Salário criado');
+        // Comemora — so na criacao, edicao eh rotina
+        celebrateSuccess(4000);
       }
       onSaved();
       onClose();
