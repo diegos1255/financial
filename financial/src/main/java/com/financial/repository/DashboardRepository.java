@@ -37,17 +37,24 @@ public class DashboardRepository {
     }
 
     public BigDecimal sumFixedExpenses(UUID userId, LocalDate endOfMonth) {
+        // Fixa conta pro mes se:
+        //  - comecou ate o fim do mes (purchaseDate <= endOfMonth) E
+        //  - nao foi cancelada OU foi cancelada DEPOIS do fim do mes
+        // Assim cancelar hoje nao apaga a fixa de meses passados (mantem historico).
         BigDecimal result = em.createQuery("""
                         SELECT COALESCE(SUM(e.totalAmount), 0)
                           FROM Expense e
                          WHERE e.user.id = :userId
                            AND e.expenseType = :fixed
-                           AND e.status = :active
                            AND e.purchaseDate <= :endOfMonth
+                           AND (e.status = :active
+                                OR (e.status = :cancelled
+                                    AND CAST(e.cancelledAt AS LocalDate) > :endOfMonth))
                         """, BigDecimal.class)
                 .setParameter("userId", userId)
                 .setParameter("fixed", ExpenseType.FIXED)
                 .setParameter("active", ExpenseStatus.ACTIVE)
+                .setParameter("cancelled", ExpenseStatus.CANCELLED)
                 .setParameter("endOfMonth", endOfMonth)
                 .getSingleResult();
         return result == null ? BigDecimal.ZERO : result;
@@ -113,6 +120,8 @@ public class DashboardRepository {
     }
 
     public List<Tuple> sumFixedExpensesByCategory(UUID userId, LocalDate endOfMonth) {
+        // Mesma regra de sumFixedExpenses: fixa cancelada continua contando
+        // pros meses anteriores ao cancelamento.
         return em.createQuery("""
                         SELECT e.category.id AS categoryId,
                                e.category.name AS categoryName,
@@ -121,13 +130,16 @@ public class DashboardRepository {
                           FROM Expense e
                          WHERE e.user.id = :userId
                            AND e.expenseType = :fixed
-                           AND e.status = :active
                            AND e.purchaseDate <= :endOfMonth
+                           AND (e.status = :active
+                                OR (e.status = :cancelled
+                                    AND CAST(e.cancelledAt AS LocalDate) > :endOfMonth))
                          GROUP BY e.category.id, e.category.name, e.category.color
                         """, Tuple.class)
                 .setParameter("userId", userId)
                 .setParameter("fixed", ExpenseType.FIXED)
                 .setParameter("active", ExpenseStatus.ACTIVE)
+                .setParameter("cancelled", ExpenseStatus.CANCELLED)
                 .setParameter("endOfMonth", endOfMonth)
                 .getResultList();
     }

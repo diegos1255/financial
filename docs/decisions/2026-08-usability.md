@@ -21,3 +21,22 @@ Branch: `feature/usabilidade`. Ajustes pontuais de UX que não pediram spec form
 **Por que não spec formal.** Escopo pequeno, sem impacto em contrato de API, sem risco arquitetural, mudança contida em 2 arquivos frontend.
 
 **Comportamento default preservado.** Sem filtros aplicados = lista igual antes (ordenada por data da compra desc).
+
+## #2 — Bugfix: cancelar despesa fixa não deve apagar histórico
+
+**Sintoma.** Ao cancelar uma despesa fixa (ex: internet da mãe em setembro/2026), o valor sumia do dashboard **de meses passados também** (julho, agosto, etc.). Perdia o histórico do que foi pago.
+
+**Causa.** As queries `DashboardRepository.sumFixedExpenses` e `sumFixedExpensesByCategory` filtravam por `status = ACTIVE` sem considerar QUANDO a despesa foi cancelada. Como cancelamento marca o `status` na mesma linha do banco (não cria histórico), o filtro `ACTIVE` excluía a fixa retroativamente.
+
+**Fix.** Nova regra: fixa conta pro mês X se:
+- começou até o fim do mês (`purchaseDate <= endOfMonth`) **E**
+- não foi cancelada **OU** foi cancelada depois do fim daquele mês (`CAST(cancelledAt AS LocalDate) > endOfMonth`)
+
+Assim cancelar em setembro → aparece em jul/ago, some de set em diante.
+
+**Escopo do fix.** Só as 2 queries de FIXED no `DashboardRepository`. Não afetou:
+- `sumInstallments*`: parcelada cancela via `installmentService.cancelPendingFor` que só cancela PENDING. PAID persiste (correto).
+- `sumVariableExpenses`: variable filtra por `purchaseDate BETWEEN`, então cancelar variable = "estorno" (sumir retroativo faz sentido).
+- `ExpenseSpecifications.inReferenceMonth`: listagem de despesas não filtra status (usa filtro do frontend). Mantido.
+
+**Consistência sutil não resolvida.** Após cancelar em setembro, no filtro **status=ACTIVE** (default da listagem) da tela de julho, a fixa NÃO aparece na listagem — mas SIM aparece somada no chip "Total do mês" (via fix). Diego pode trocar filtro pra "Todos status" pra ver todo o histórico. Se virar dor, ajuste futuro em `ExpenseSpecifications` ou no filtro do frontend.
