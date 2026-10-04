@@ -1,7 +1,6 @@
 package com.financial.exception;
 
 import com.financial.dto.ApiError;
-import com.financial.exception.DuplicateSalaryException;
 import com.financial.exception.ExpenseCancellationException;
 import com.financial.exception.InstallmentAlreadyProcessedException;
 import com.financial.exception.InstallmentNotPaidException;
@@ -11,6 +10,7 @@ import com.financial.exception.InvalidPhotoException;
 import com.financial.exception.LoginAlreadyExistsException;
 import com.financial.exception.ResourceConflictException;
 import com.financial.exception.ResourceNotFoundException;
+import com.financial.exception.SalaryPaymentOutOfCompetenceException;
 import com.financial.gmail.exception.GmailInvalidStateException;
 import com.financial.gmail.exception.GmailReauthRequiredException;
 import com.financial.gmail.exception.GmailSendException;
@@ -59,10 +59,10 @@ public class ApiErrorHandler {
                 .body(ApiError.of(409, "CONFLICT", e.getMessage()));
     }
 
-    @ExceptionHandler(DuplicateSalaryException.class)
-    public ResponseEntity<ApiError> handleDuplicateSalary(DuplicateSalaryException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiError.of(409, "DUPLICATE_SALARY", e.getMessage()));
+    @ExceptionHandler(SalaryPaymentOutOfCompetenceException.class)
+    public ResponseEntity<ApiError> handleSalaryPaymentOutOfCompetence(SalaryPaymentOutOfCompetenceException e) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(ApiError.of(422, "PAYMENT_OUT_OF_COMPETENCE", e.getMessage()));
     }
 
     @ExceptionHandler(InvalidExpenseTypeException.class)

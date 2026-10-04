@@ -24,7 +24,8 @@ import java.math.BigDecimal;
                 columnNames = {"user_id", "reference_year", "reference_month"}
         )
 )
-@Check(constraints = "reference_month BETWEEN 1 AND 12 AND reference_year >= 2000 AND amount >= 0")
+@Check(constraints = "reference_month BETWEEN 1 AND 12 AND reference_year >= 2000 "
+        + "AND (expected_amount IS NULL OR expected_amount > 0)")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,18 +37,15 @@ public class Salary extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "bank_account_id", nullable = false)
-    private BankAccount bankAccount;
-
     @Column(name = "reference_month", nullable = false)
     private Integer referenceMonth;
 
     @Column(name = "reference_year", nullable = false)
     private Integer referenceYear;
 
-    @Column(name = "amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal amount;
+    // Total previsto da competencia (normalmente o valor da NF). NULL = nao informado.
+    @Column(name = "expected_amount", precision = 12, scale = 2)
+    private BigDecimal expectedAmount;
 
     @Column(name = "description", length = 255)
     private String description;

@@ -8,6 +8,7 @@ import com.financial.exception.ResourceNotFoundException;
 import com.financial.mapper.PjEntryMapper;
 import com.financial.model.PjEntry;
 import com.financial.model.User;
+import com.financial.model.enums.PjEntryType;
 import com.financial.repository.PjEntryRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
@@ -25,15 +26,18 @@ public class PjEntryService {
     private final PjFileStorageService fileStorage;
     private final PjEntryMapper mapper;
     private final EntityManager entityManager;
+    private final SalaryService salaryService;
 
     public PjEntryService(PjEntryRepository repository,
                           PjFileStorageService fileStorage,
                           PjEntryMapper mapper,
-                          EntityManager entityManager) {
+                          EntityManager entityManager,
+                          SalaryService salaryService) {
         this.repository = repository;
         this.fileStorage = fileStorage;
         this.mapper = mapper;
         this.entityManager = entityManager;
+        this.salaryService = salaryService;
     }
 
     @Transactional(readOnly = true)
@@ -78,6 +82,9 @@ public class PjEntryService {
                     .contentType(file.getContentType())
                     .build();
             repository.save(entry);
+            if (entry.getType() == PjEntryType.INVOICE) {
+                salaryService.syncExpectedFromInvoice(userId, entry.getYear(), entry.getMonth(), entry.getAmount());
+            }
             return mapper.toResponse(entry);
         } catch (RuntimeException e) {
             try { fileStorage.delete(key); } catch (RuntimeException ignored) {}
@@ -99,6 +106,10 @@ public class PjEntryService {
                     + " para " + request.month() + "/" + request.year());
         }
 
+        boolean wasInvoice = entry.getType() == PjEntryType.INVOICE;
+        int oldYear = entry.getYear();
+        int oldMonth = entry.getMonth();
+
         String oldKey = null;
         if (file != null && !file.isEmpty()) {
             oldKey = entry.getFileUrl();
@@ -113,6 +124,7 @@ public class PjEntryService {
         entry.setMonth(request.month());
         entry.setAmount(request.amount());
         repository.save(entry);
+        syncSalaryAfterUpdate(userId, entry, wasInvoice, oldYear, oldMonth);
 
         if (oldKey != null) {
             try { fileStorage.delete(oldKey); } catch (RuntimeException ignored) {}
@@ -125,6 +137,21 @@ public class PjEntryService {
         PjEntry entry = findOwn(id);
         String key = entry.getFileUrl();
         repository.delete(entry);
+        if (entry.getType() == PjEntryType.INVOICE) {
+            salaryService.syncExpectedFromInvoice(CurrentUser.id(), entry.getYear(), entry.getMonth(), null);
+        }
         try { fileStorage.delete(key); } catch (RuntimeException ignored) {}
+    }
+
+    // A NF e a fonte do total previsto do salario (WORK-30, D-4).
+    private void syncSalaryAfterUpdate(UUID userId, PjEntry entry, boolean wasInvoice, int oldYear, int oldMonth) {
+        boolean isInvoice = entry.getType() == PjEntryType.INVOICE;
+        boolean competenceChanged = oldYear != entry.getYear() || oldMonth != entry.getMonth();
+        if (wasInvoice && (!isInvoice || competenceChanged)) {
+            salaryService.syncExpectedFromInvoice(userId, oldYear, oldMonth, null);
+        }
+        if (isInvoice) {
+            salaryService.syncExpectedFromInvoice(userId, entry.getYear(), entry.getMonth(), entry.getAmount());
+        }
     }
 }
