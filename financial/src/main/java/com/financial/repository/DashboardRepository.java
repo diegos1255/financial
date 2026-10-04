@@ -23,11 +23,11 @@ public class DashboardRepository {
 
     public BigDecimal sumSalary(UUID userId, int year, int month) {
         BigDecimal result = em.createQuery("""
-                        SELECT COALESCE(SUM(s.amount), 0)
-                          FROM Salary s
-                         WHERE s.user.id = :userId
-                           AND s.referenceYear = :year
-                           AND s.referenceMonth = :month
+                        SELECT COALESCE(SUM(p.amount), 0)
+                          FROM SalaryPayment p
+                         WHERE p.user.id = :userId
+                           AND p.salary.referenceYear = :year
+                           AND p.salary.referenceMonth = :month
                         """, BigDecimal.class)
                 .setParameter("userId", userId)
                 .setParameter("year", year)

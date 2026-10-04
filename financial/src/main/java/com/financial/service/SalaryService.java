@@ -1,98 +1,189 @@
 package com.financial.service;
 
 import com.financial.auth.CurrentUser;
-import com.financial.dto.SalaryRequest;
-import com.financial.dto.SalaryResponse;
-import com.financial.exception.DuplicateSalaryException;
+import com.financial.dto.SalaryHeaderRequest;
+import com.financial.dto.SalaryMonthResponse;
+import com.financial.dto.SalaryPaymentRequest;
+import com.financial.dto.SalaryPaymentResponse;
 import com.financial.exception.ResourceNotFoundException;
+import com.financial.exception.SalaryPaymentOutOfCompetenceException;
 import com.financial.mapper.SalaryMapper;
 import com.financial.model.BankAccount;
 import com.financial.model.Salary;
+import com.financial.model.SalaryPayment;
 import com.financial.model.User;
+import com.financial.model.enums.PjEntryType;
 import com.financial.repository.BankAccountRepository;
+import com.financial.repository.PjEntryRepository;
+import com.financial.repository.SalaryPaymentRepository;
 import com.financial.repository.SalaryRepository;
 import jakarta.persistence.EntityManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Salario por competencia (WORK-30): cabecalho com total previsto + recebimentos datados.
+ * Toda escrita devolve o mes inteiro atualizado.
+ */
 @Service
 @Transactional
 public class SalaryService {
 
+    private static final Logger log = LoggerFactory.getLogger(SalaryService.class);
+
     private final SalaryRepository repository;
+    private final SalaryPaymentRepository paymentRepository;
     private final BankAccountRepository bankAccountRepository;
+    private final PjEntryRepository pjEntryRepository;
     private final SalaryMapper mapper;
     private final EntityManager entityManager;
 
     public SalaryService(SalaryRepository repository,
+                         SalaryPaymentRepository paymentRepository,
                          BankAccountRepository bankAccountRepository,
+                         PjEntryRepository pjEntryRepository,
                          SalaryMapper mapper,
                          EntityManager entityManager) {
         this.repository = repository;
+        this.paymentRepository = paymentRepository;
         this.bankAccountRepository = bankAccountRepository;
+        this.pjEntryRepository = pjEntryRepository;
         this.mapper = mapper;
         this.entityManager = entityManager;
     }
 
     @Transactional(readOnly = true)
-    public List<SalaryResponse> list(Integer year, Integer month, UUID bankAccountId) {
-        return repository.findFiltered(CurrentUser.id(), year, month, bankAccountId).stream()
-                .map(mapper::toResponse)
-                .toList();
+    public SalaryMonthResponse getMonth(int year, int month) {
+        UUID userId = CurrentUser.id();
+        Salary salary = repository.findByUserIdAndReferenceYearAndReferenceMonth(userId, year, month).orElse(null);
+        return toMonthResponse(userId, year, month, salary);
     }
 
-    @Transactional(readOnly = true)
-    public SalaryResponse get(UUID id) {
-        return mapper.toResponse(loadOwned(id));
+    public SalaryMonthResponse upsertHeader(int year, int month, SalaryHeaderRequest request) {
+        UUID userId = CurrentUser.id();
+        Salary salary = findOrCreate(userId, year, month);
+        salary.setExpectedAmount(request.expectedAmount());
+        salary.setDescription(request.description());
+        repository.save(salary);
+        return toMonthResponse(userId, year, month, salary);
     }
 
-    public SalaryResponse create(SalaryRequest request) {
+    public SalaryMonthResponse addPayment(int year, int month, SalaryPaymentRequest request) {
         UUID userId = CurrentUser.id();
         ensureBankAccountBelongsToUser(request.bankAccountId(), userId);
-        if (repository.existsByUserIdAndReferenceYearAndReferenceMonth(
-                userId, request.referenceYear(), request.referenceMonth())) {
-            throw new DuplicateSalaryException(
-                    "Já existe salário para %d/%d".formatted(request.referenceMonth(), request.referenceYear()));
-        }
-        Salary entity = Salary.builder()
+        ensureWithinCompetence(request.paymentDate(), year, month);
+
+        Salary salary = findOrCreate(userId, year, month);
+        SalaryPayment payment = SalaryPayment.builder()
+                .salary(salary)
                 .user(entityManager.getReference(User.class, userId))
-                .bankAccount(entityManager.getReference(BankAccount.class, request.bankAccountId()))
-                .referenceYear(request.referenceYear())
-                .referenceMonth(request.referenceMonth())
-                .amount(request.amount())
-                .description(request.description())
                 .build();
-        return mapper.toResponse(repository.save(entity));
+        apply(payment, request);
+        paymentRepository.save(payment);
+        return toMonthResponse(userId, year, month, salary);
     }
 
-    public SalaryResponse update(UUID id, SalaryRequest request) {
+    public SalaryMonthResponse updatePayment(UUID id, SalaryPaymentRequest request) {
         UUID userId = CurrentUser.id();
-        Salary entity = loadOwned(id);
+        SalaryPayment payment = loadOwnedPayment(id, userId);
+        Salary salary = payment.getSalary();
         ensureBankAccountBelongsToUser(request.bankAccountId(), userId);
-        if (repository.existsByUserIdAndReferenceYearAndReferenceMonthAndIdNot(
-                userId, request.referenceYear(), request.referenceMonth(), id)) {
-            throw new DuplicateSalaryException(
-                    "Já existe salário para %d/%d".formatted(request.referenceMonth(), request.referenceYear()));
+        ensureWithinCompetence(request.paymentDate(), salary.getReferenceYear(), salary.getReferenceMonth());
+
+        apply(payment, request);
+        paymentRepository.save(payment);
+        return toMonthResponse(userId, salary.getReferenceYear(), salary.getReferenceMonth(), salary);
+    }
+
+    public SalaryMonthResponse deletePayment(UUID id) {
+        UUID userId = CurrentUser.id();
+        SalaryPayment payment = loadOwnedPayment(id, userId);
+        Salary salary = payment.getSalary();
+        paymentRepository.delete(payment);
+        paymentRepository.flush();
+        return toMonthResponse(userId, salary.getReferenceYear(), salary.getReferenceMonth(), salary);
+    }
+
+    /**
+     * Mantem o total previsto igual a NF (INVOICE) da competencia. Chamado pelo
+     * {@link PjEntryService}. {@code amount == null} significa que a NF foi excluida.
+     */
+    public void syncExpectedFromInvoice(UUID userId, int year, int month, BigDecimal amount) {
+        if (amount != null) {
+            Salary salary = findOrCreate(userId, year, month);
+            salary.setExpectedAmount(amount);
+            repository.save(salary);
+            log.info("Salário {}/{}: total previsto sincronizado pela NF", month, year);
+            return;
         }
-        entity.setBankAccount(entityManager.getReference(BankAccount.class, request.bankAccountId()));
-        entity.setReferenceYear(request.referenceYear());
-        entity.setReferenceMonth(request.referenceMonth());
-        entity.setAmount(request.amount());
-        entity.setDescription(request.description());
-        return mapper.toResponse(repository.save(entity));
+        repository.findByUserIdAndReferenceYearAndReferenceMonth(userId, year, month).ifPresent(salary -> {
+            // Cabecalho que so existia por causa da NF some junto com ela.
+            if (salary.getDescription() == null && !paymentRepository.existsBySalaryId(salary.getId())) {
+                repository.delete(salary);
+            } else {
+                salary.setExpectedAmount(null);
+                repository.save(salary);
+            }
+            log.info("Salário {}/{}: NF excluída, total previsto removido", month, year);
+        });
     }
 
-    public void delete(UUID id) {
-        Salary entity = loadOwned(id);
-        repository.delete(entity);
+    private Salary findOrCreate(UUID userId, int year, int month) {
+        return repository.findByUserIdAndReferenceYearAndReferenceMonth(userId, year, month)
+                .orElseGet(() -> repository.save(Salary.builder()
+                        .user(entityManager.getReference(User.class, userId))
+                        .referenceYear(year)
+                        .referenceMonth(month)
+                        .build()));
     }
 
-    private Salary loadOwned(UUID id) {
-        return repository.findByIdAndUserId(id, CurrentUser.id())
-                .orElseThrow(() -> new ResourceNotFoundException("Salário não encontrado"));
+    private void apply(SalaryPayment payment, SalaryPaymentRequest request) {
+        payment.setBankAccount(entityManager.getReference(BankAccount.class, request.bankAccountId()));
+        payment.setPaymentDate(request.paymentDate());
+        payment.setAmount(request.amount());
+        payment.setDescription(request.description());
+    }
+
+    private SalaryMonthResponse toMonthResponse(UUID userId, int year, int month, Salary salary) {
+        boolean fromInvoice = pjEntryRepository.existsByUserIdAndYearAndMonthAndType(
+                userId, year, month, PjEntryType.INVOICE);
+        if (salary == null) {
+            return new SalaryMonthResponse(null, year, month, null, fromInvoice,
+                    BigDecimal.ZERO, null, null, List.of());
+        }
+
+        List<SalaryPaymentResponse> payments = paymentRepository
+                .findBySalaryIdOrderByPaymentDateAscCreatedDateAsc(salary.getId()).stream()
+                .map(mapper::toPaymentResponse)
+                .toList();
+        BigDecimal received = payments.stream()
+                .map(SalaryPaymentResponse::amount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal expected = salary.getExpectedAmount();
+        BigDecimal remaining = expected == null ? null : expected.subtract(received);
+
+        return new SalaryMonthResponse(salary.getId(), year, month, expected, fromInvoice,
+                received, remaining, salary.getDescription(), payments);
+    }
+
+    private void ensureWithinCompetence(LocalDate date, int year, int month) {
+        if (!YearMonth.from(date).equals(YearMonth.of(year, month))) {
+            throw new SalaryPaymentOutOfCompetenceException(
+                    "A data do recebimento deve estar dentro de %02d/%d".formatted(month, year));
+        }
+    }
+
+    private SalaryPayment loadOwnedPayment(UUID id, UUID userId) {
+        return paymentRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Recebimento não encontrado"));
     }
 
     private void ensureBankAccountBelongsToUser(UUID bankAccountId, UUID userId) {
