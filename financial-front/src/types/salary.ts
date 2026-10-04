@@ -1,19 +1,32 @@
-export type Salary = {
+export type SalaryPayment = {
   id: string;
+  paymentDate: string;
+  amount: number;
   bankAccountId: string;
   bankAccountName: string;
-  referenceYear: number;
-  referenceMonth: number;
-  amount: number;
   description: string | null;
-  createdDate: string;
-  updatedDate: string;
 };
 
-export type SalaryRequest = {
-  bankAccountId: string;
+export type SalaryMonth = {
+  id: string | null;
   referenceYear: number;
   referenceMonth: number;
+  expectedAmount: number | null;
+  expectedFromInvoice: boolean;
+  receivedAmount: number;
+  remainingAmount: number | null;
+  description: string | null;
+  payments: SalaryPayment[];
+};
+
+export type SalaryHeaderRequest = {
+  expectedAmount: number | null;
+  description: string | null;
+};
+
+export type SalaryPaymentRequest = {
+  paymentDate: string;
   amount: number;
-  description?: string | null;
+  bankAccountId: string;
+  description: string | null;
 };

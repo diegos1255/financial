@@ -1,26 +1,25 @@
 import { api } from './api';
-import type { Salary, SalaryRequest } from '../types/salary';
-
-export type SalaryFilters = {
-  year?: number;
-  month?: number;
-  bankAccountId?: string;
-};
+import type { SalaryHeaderRequest, SalaryMonth, SalaryPaymentRequest } from '../types/salary';
 
 export const salaryService = {
-  async list(filters: SalaryFilters = {}): Promise<Salary[]> {
-    const { data } = await api.get<Salary[]>('/api/salaries', { params: filters });
+  async getMonth(year: number, month: number): Promise<SalaryMonth> {
+    const { data } = await api.get<SalaryMonth>(`/api/salaries/${year}/${month}`);
     return data;
   },
-  async create(payload: SalaryRequest): Promise<Salary> {
-    const { data } = await api.post<Salary>('/api/salaries', payload);
+  async updateHeader(year: number, month: number, payload: SalaryHeaderRequest): Promise<SalaryMonth> {
+    const { data } = await api.put<SalaryMonth>(`/api/salaries/${year}/${month}`, payload);
     return data;
   },
-  async update(id: string, payload: SalaryRequest): Promise<Salary> {
-    const { data } = await api.put<Salary>(`/api/salaries/${id}`, payload);
+  async addPayment(year: number, month: number, payload: SalaryPaymentRequest): Promise<SalaryMonth> {
+    const { data } = await api.post<SalaryMonth>(`/api/salaries/${year}/${month}/payments`, payload);
     return data;
   },
-  async remove(id: string): Promise<void> {
-    await api.delete(`/api/salaries/${id}`);
+  async updatePayment(id: string, payload: SalaryPaymentRequest): Promise<SalaryMonth> {
+    const { data } = await api.put<SalaryMonth>(`/api/salaries/payments/${id}`, payload);
+    return data;
+  },
+  async removePayment(id: string): Promise<SalaryMonth> {
+    const { data } = await api.delete<SalaryMonth>(`/api/salaries/payments/${id}`);
+    return data;
   },
 };
