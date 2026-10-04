@@ -80,8 +80,12 @@ public class SecurityConfig {
                 // mutation after login finds no cookie and the request is rejected.
                 .addFilterAfter(new CsrfCookieFilter(), UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers
-                        .addHeaderWriter(new StaticHeadersWriter(
-                                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                        // Native HSTS writer: only emits the header on HTTPS requests.
+                        // A static writer sent it over plain HTTP too, making browsers
+                        // pin http://localhost to HTTPS and breaking local dev.
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000))
                         .addHeaderWriter(new StaticHeadersWriter(
                                 "Referrer-Policy", "strict-origin-when-cross-origin"))
                         .addHeaderWriter(new StaticHeadersWriter(
