@@ -263,6 +263,17 @@ Recebimentos por competência
 
 - **Componentes novos**:
   - `pages/salaries/SalarySummaryCard.tsx` — total / recebido / falta + barra de progresso (cap visual em 100%) + botão "Editar total"; rótulo "(da NF)" quando `expectedFromInvoice`
+  - **Cores do card (D-5)** — a cor depende só do **valor recebido em R$** (não do total/NF):
+
+| Recebido | Cor da barra e do valor "Recebido" |
+|---|---|
+| até R$ 5.000,00 | vermelho (`red-500` / `red-600`) |
+| R$ 5.000,01 a R$ 10.000,00 | laranja (`orange-500` / `orange-600`) |
+| acima de R$ 10.000,00 | verde (`emerald-500` / `emerald-600`) |
+
+    - "Total a receber": preto (`slate-900`)
+    - "Falta": cor de destaque do sistema (`accent`, índigo dos botões)
+    - "Excedente" (recebido > total): âmbar, como antes
   - `pages/salaries/SalaryPaymentFormModal.tsx` — data (`<input type="date">` com `min`/`max` = 1º e último dia da competência; default = hoje se estiver no mês, senão dia 1), valor (`CurrencyInput`), conta (`Select`, default = última conta usada), descrição; passo de **confirmação** igual aos demais cadastros
   - `pages/salaries/SalaryTotalModal.tsx` — edita total previsto (vazio = não informado) e descrição; se `expectedFromInvoice`, mostra aviso "Este total vem da NF; ao alterar a NF ele será sobrescrito"
 - **Componentes alterados**: `services/salaryService.ts`, `types/salary.ts`
@@ -384,6 +395,7 @@ Recebimentos por competência
   - **D-2**: conta bancária em cada recebimento, default = última usada
   - **D-3**: total opcional; recebido acima do total só gera aviso (não bloqueia)
   - **D-4**: total previsto preenchido pela NF do módulo PJ; alterar a NF sobrescreve o total
+  - **D-5** (2026-10-04, após teste na tela): cor da barra e do "Recebido" por faixas fixas do valor recebido — até R$ 5 mil vermelho, até R$ 10 mil laranja, acima verde; "Falta" em índigo
 - **Decisões pendentes**: nenhuma
 - **Assunções temporárias**:
   - Rescisão parcelada será tratada em spec futura e pode reaproveitar `salary_payments`

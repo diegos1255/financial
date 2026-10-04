@@ -386,38 +386,38 @@
     },
     {
       "name": "Salários",
-      "description": "CRUD de Salary com UNIQUE(user, year, month). DELETE é HARD (sem campo active). Filtros opcionais no GET list.",
+      "description": "Salário por competência (WORK-30): cabeçalho com total previsto (opcional, sincronizado pela NF do módulo PJ) + recebimentos datados dentro do mês. Toda escrita devolve o mês inteiro. DELETE de recebimento é HARD.",
       "item": [
         {
-          "name": "GET list (filtros opcionais)",
+          "name": "GET mês (cabeçalho + recebimentos)",
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/salaries?year=2026&month=7",
+              "raw": "{{baseUrl}}/api/salaries/2026/10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "salaries"],
-              "query": [
-                {"key": "year", "value": "2026", "disabled": true, "description": "filtro opcional"},
-                {"key": "month", "value": "7", "disabled": true, "description": "filtro opcional"},
-                {"key": "bankAccountId", "value": "{{bankAccountId}}", "disabled": true, "description": "filtro opcional"}
-              ]
-            },
-            "description": "Lista ordenada por (year DESC, month DESC). Filtros combináveis."
-          }
-        },
-        {
-          "name": "GET by id",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/salaries/{{salaryId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "salaries", "{{salaryId}}"]
+              "path": ["api", "salaries", "2026", "10"]
             }
           }
         },
         {
-          "name": "POST create",
+          "name": "PUT total previsto do mês",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expectedAmount\": 16000.00,\n  \"description\": \"NF outubro\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/salaries/2026/10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "salaries", "2026", "10"]
+            }
+          }
+        },
+        {
+          "name": "POST recebimento",
           "event": [
             {
               "listen": "test",
@@ -426,7 +426,8 @@
                 "exec": [
                   "if (pm.response.code === 201) {",
                   "    const body = pm.response.json();",
-                  "    if (body.id) pm.environment.set('salaryId', body.id);",
+                  "    const last = body.payments[body.payments.length - 1];",
+                  "    if (last) pm.environment.set('salaryPaymentId', last.id);",
                   "}"
                 ]
               }
@@ -434,47 +435,45 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"bankAccountId\": \"{{bankAccountId}}\",\n  \"referenceYear\": 2026,\n  \"referenceMonth\": 7,\n  \"amount\": 5000.00,\n  \"description\": \"Salário CLT\"\n}",
-              "options": {"raw": {"language": "json"}}
+              "raw": "{\n  \"paymentDate\": \"2026-10-05\",\n  \"amount\": 8000.00,\n  \"bankAccountId\": \"{{bankAccountId}}\",\n  \"description\": \"1ª parcela\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/salaries",
+              "raw": "{{baseUrl}}/api/salaries/2026/10/payments",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "salaries"]
-            },
-            "description": "Duplicidade de (year, month) → 409 DUPLICATE_SALARY."
-          }
-        },
-        {
-          "name": "PUT update",
-          "request": {
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"bankAccountId\": \"{{bankAccountId}}\",\n  \"referenceYear\": 2026,\n  \"referenceMonth\": 7,\n  \"amount\": 5500.00,\n  \"description\": \"Ajuste salarial\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/salaries/{{salaryId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "salaries", "{{salaryId}}"]
+              "path": ["api", "salaries", "2026", "10", "payments"]
             }
           }
         },
         {
-          "name": "DELETE (hard)",
+          "name": "PUT recebimento",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentDate\": \"2026-10-06\",\n  \"amount\": 8000.00,\n  \"bankAccountId\": \"{{bankAccountId}}\",\n  \"description\": \"1ª parcela\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/salaries/payments/{{salaryPaymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "salaries", "payments", "{{salaryPaymentId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE recebimento (hard)",
           "request": {
             "method": "DELETE",
             "url": {
-              "raw": "{{baseUrl}}/api/salaries/{{salaryId}}",
+              "raw": "{{baseUrl}}/api/salaries/payments/{{salaryPaymentId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "salaries", "{{salaryId}}"]
-            },
-            "description": "Hard delete — única exceção à regra de soft-delete. Schema não tem campo active."
+              "path": ["api", "salaries", "payments", "{{salaryPaymentId}}"]
+            }
           }
         }
       ]
