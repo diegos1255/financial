@@ -734,6 +734,37 @@
       "description": "Agregações. Sem year/month → mês corrente.",
       "item": [
         {
+          "name": "GET /month-expenses (itens que compõem o total do mês)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/month-expenses?year=2026&month=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "month-expenses"],
+              "query": [
+                { "key": "year", "value": "2026" },
+                { "key": "month", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /evolution (6 meses até o selecionado)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/evolution?year=2026&month=10&months=6",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "evolution"],
+              "query": [
+                { "key": "year", "value": "2026" },
+                { "key": "month", "value": "10" },
+                { "key": "months", "value": "6" }
+              ]
+            }
+          }
+        },
+        {
           "name": "GET /balance",
           "request": {
             "method": "GET",
