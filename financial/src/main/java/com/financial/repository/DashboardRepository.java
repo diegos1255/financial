@@ -1,5 +1,7 @@
 package com.financial.repository;
 
+import com.financial.model.Expense;
+import com.financial.model.Installment;
 import com.financial.model.enums.ExpenseStatus;
 import com.financial.model.enums.ExpenseType;
 import com.financial.model.enums.InstallmentStatus;
@@ -14,6 +16,31 @@ import java.util.UUID;
 
 @Repository
 public class DashboardRepository {
+
+    // Filtros compartilhados entre as somas do balanco e as listas do mes (WORK-32),
+    // para que a lista de despesas sempre feche com o total do dashboard.
+    private static final String FIXED_IN_MONTH = """
+            e.user.id = :userId
+            AND e.expenseType = :fixed
+            AND e.purchaseDate <= :endOfMonth
+            AND (e.status = :active
+                 OR (e.status = :cancelled
+                     AND CAST(e.cancelledAt AS LocalDate) > :endOfMonth))
+            """;
+    private static final String INSTALLMENT_IN_MONTH = """
+            i.expense.user.id = :userId
+            AND (
+              (i.status IN :pendingPaid AND i.dueDate BETWEEN :startOfMonth AND :endOfMonth)
+              OR
+              (i.status = :anticipated AND CAST(i.paidAt AS LocalDate) BETWEEN :startOfMonth AND :endOfMonth)
+            )
+            """;
+    private static final String VARIABLE_IN_MONTH = """
+            e.user.id = :userId
+            AND e.expenseType = :variable
+            AND e.status = :active
+            AND e.purchaseDate BETWEEN :startOfMonth AND :endOfMonth
+            """;
 
     private final EntityManager em;
 
@@ -41,16 +68,9 @@ public class DashboardRepository {
         //  - comecou ate o fim do mes (purchaseDate <= endOfMonth) E
         //  - nao foi cancelada OU foi cancelada DEPOIS do fim do mes
         // Assim cancelar hoje nao apaga a fixa de meses passados (mantem historico).
-        BigDecimal result = em.createQuery("""
-                        SELECT COALESCE(SUM(e.totalAmount), 0)
-                          FROM Expense e
-                         WHERE e.user.id = :userId
-                           AND e.expenseType = :fixed
-                           AND e.purchaseDate <= :endOfMonth
-                           AND (e.status = :active
-                                OR (e.status = :cancelled
-                                    AND CAST(e.cancelledAt AS LocalDate) > :endOfMonth))
-                        """, BigDecimal.class)
+        BigDecimal result = em.createQuery(
+                        "SELECT COALESCE(SUM(e.totalAmount), 0) FROM Expense e WHERE " + FIXED_IN_MONTH,
+                        BigDecimal.class)
                 .setParameter("userId", userId)
                 .setParameter("fixed", ExpenseType.FIXED)
                 .setParameter("active", ExpenseStatus.ACTIVE)
@@ -62,16 +82,9 @@ public class DashboardRepository {
 
     // Total de parcelas do mês: PENDING/PAID com dueDate no mês + ANTICIPATED com paidAt no mês
     public BigDecimal sumInstallments(UUID userId, LocalDate startOfMonth, LocalDate endOfMonth) {
-        BigDecimal result = em.createQuery("""
-                        SELECT COALESCE(SUM(i.amount), 0)
-                          FROM Installment i
-                         WHERE i.expense.user.id = :userId
-                           AND (
-                             (i.status IN :pendingPaid AND i.dueDate BETWEEN :startOfMonth AND :endOfMonth)
-                             OR
-                             (i.status = :anticipated AND CAST(i.paidAt AS LocalDate) BETWEEN :startOfMonth AND :endOfMonth)
-                           )
-                        """, BigDecimal.class)
+        BigDecimal result = em.createQuery(
+                        "SELECT COALESCE(SUM(i.amount), 0) FROM Installment i WHERE " + INSTALLMENT_IN_MONTH,
+                        BigDecimal.class)
                 .setParameter("userId", userId)
                 .setParameter("pendingPaid", List.of(InstallmentStatus.PENDING, InstallmentStatus.PAID))
                 .setParameter("anticipated", InstallmentStatus.ANTICIPATED)
@@ -168,14 +181,9 @@ public class DashboardRepository {
     }
 
     public BigDecimal sumVariableExpenses(UUID userId, LocalDate startOfMonth, LocalDate endOfMonth) {
-        BigDecimal result = em.createQuery("""
-                        SELECT COALESCE(SUM(e.totalAmount), 0)
-                          FROM Expense e
-                         WHERE e.user.id = :userId
-                           AND e.expenseType = :variable
-                           AND e.status = :active
-                           AND e.purchaseDate BETWEEN :startOfMonth AND :endOfMonth
-                        """, BigDecimal.class)
+        BigDecimal result = em.createQuery(
+                        "SELECT COALESCE(SUM(e.totalAmount), 0) FROM Expense e WHERE " + VARIABLE_IN_MONTH,
+                        BigDecimal.class)
                 .setParameter("userId", userId)
                 .setParameter("variable", ExpenseType.VARIABLE)
                 .setParameter("active", ExpenseStatus.ACTIVE)
@@ -198,6 +206,40 @@ public class DashboardRepository {
                            AND e.purchaseDate BETWEEN :startOfMonth AND :endOfMonth
                          GROUP BY e.category.id, e.category.name, e.category.color
                         """, Tuple.class)
+                .setParameter("userId", userId)
+                .setParameter("variable", ExpenseType.VARIABLE)
+                .setParameter("active", ExpenseStatus.ACTIVE)
+                .setParameter("startOfMonth", startOfMonth)
+                .setParameter("endOfMonth", endOfMonth)
+                .getResultList();
+    }
+
+    public List<Expense> listFixedExpenses(UUID userId, LocalDate endOfMonth) {
+        return em.createQuery(
+                        "SELECT e FROM Expense e JOIN FETCH e.category WHERE " + FIXED_IN_MONTH, Expense.class)
+                .setParameter("userId", userId)
+                .setParameter("fixed", ExpenseType.FIXED)
+                .setParameter("active", ExpenseStatus.ACTIVE)
+                .setParameter("cancelled", ExpenseStatus.CANCELLED)
+                .setParameter("endOfMonth", endOfMonth)
+                .getResultList();
+    }
+
+    public List<Installment> listInstallments(UUID userId, LocalDate startOfMonth, LocalDate endOfMonth) {
+        return em.createQuery(
+                        "SELECT i FROM Installment i JOIN FETCH i.expense ex JOIN FETCH ex.category WHERE "
+                                + INSTALLMENT_IN_MONTH, Installment.class)
+                .setParameter("userId", userId)
+                .setParameter("pendingPaid", List.of(InstallmentStatus.PENDING, InstallmentStatus.PAID))
+                .setParameter("anticipated", InstallmentStatus.ANTICIPATED)
+                .setParameter("startOfMonth", startOfMonth)
+                .setParameter("endOfMonth", endOfMonth)
+                .getResultList();
+    }
+
+    public List<Expense> listVariableExpenses(UUID userId, LocalDate startOfMonth, LocalDate endOfMonth) {
+        return em.createQuery(
+                        "SELECT e FROM Expense e JOIN FETCH e.category WHERE " + VARIABLE_IN_MONTH, Expense.class)
                 .setParameter("userId", userId)
                 .setParameter("variable", ExpenseType.VARIABLE)
                 .setParameter("active", ExpenseStatus.ACTIVE)

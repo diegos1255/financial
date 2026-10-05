@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 74 160 180" width="160" height="180">
+  <title>Saldo negativo</title>
+  <g fill="none" stroke="#111" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- corpo sentado -->
+    <path d="M72 238 C64 190 62 140 76 112 C90 84 146 82 162 112 C176 140 174 190 168 238 Z" fill="#fff"/>
+    <!-- joelhos abraçados -->
+    <path d="M84 238 C84 196 112 190 116 238" fill="#fff"/>
+    <path d="M124 238 C126 190 156 196 156 238" fill="#fff"/>
+    <!-- braços descendo ate os joelhos -->
+    <path d="M78 168 C80 188 88 200 98 206"/>
+    <path d="M162 168 C160 188 152 200 142 206"/>
+    <!-- chão -->
+    <path d="M52 244 L188 244" stroke-width="5"/>
+  </g>
+  <!-- olhos fechados tristes -->
+  <g fill="none" stroke="#111" stroke-width="6" stroke-linecap="round">
+    <path d="M94 132 Q102 126 110 132"/>
+    <path d="M130 132 Q138 126 146 132"/>
+    <!-- boca triste -->
+    <path d="M106 166 Q120 150 134 166"/>
+  </g>
+  <!-- lagrimas -->
+  <g stroke="#60a5fa" stroke-width="6" stroke-linecap="round">
+    <line x1="102" y1="138" x2="102" y2="168"/>
+    <line x1="138" y1="138" x2="138" y2="168"/>
+  </g>
+</svg>

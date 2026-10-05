@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { BalanceResponse, CategoryExpense } from '../types/dashboard';
+import type { BalanceResponse, CategoryExpense, MonthEvolution, MonthExpenseItem } from '../types/dashboard';
 
 export type DashboardFilters = {
   year?: number;
@@ -18,6 +18,14 @@ export const dashboardService = {
       '/api/dashboard/expenses-by-category',
       { params: filters },
     );
+    return data;
+  },
+  async evolution(filters: DashboardFilters & { months?: number } = {}): Promise<MonthEvolution[]> {
+    const { data } = await api.get<MonthEvolution[]>('/api/dashboard/evolution', { params: filters });
+    return data;
+  },
+  async monthExpenses(filters: DashboardFilters = {}): Promise<MonthExpenseItem[]> {
+    const { data } = await api.get<MonthExpenseItem[]>('/api/dashboard/month-expenses', { params: filters });
     return data;
   },
 };

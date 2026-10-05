@@ -2,6 +2,8 @@ import { Handshake } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { severanceTone } from '../severance/severanceTone';
 import type { Severance } from '../../types/severance';
+import { SectionTitle } from '../../components/ui/SectionTitle';
+import { SECTION_CARD_CLASSES } from '../../components/ui/sectionCard';
 
 type Props = {
   severance: Severance;
@@ -16,12 +18,8 @@ export function SeveranceCard({ severance, mask }: Props) {
   const tone = severanceTone(received);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-soft">
-      <div className="flex items-center gap-2 mb-3">
-        <Handshake className="h-4 w-4 text-slate-400" />
-        <h2 className="text-xs font-semibold text-slate-500 tracking-wider uppercase">Rescisão</h2>
-      </div>
-      <div className="-mx-5 border-t border-slate-100 mb-4" />
+    <div className={SECTION_CARD_CLASSES}>
+      <SectionTitle icon={<Handshake className="h-4 w-4" />} title="Rescisão" tone="amber" />
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <div>
           <div className="text-xs text-slate-500">Total a receber</div>
