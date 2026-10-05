@@ -12,6 +12,7 @@ import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { BankAccountsPage } from './pages/bank-accounts/BankAccountsPage';
 import { InvestmentsPage } from './pages/investments/InvestmentsPage';
 import { SalariesPage } from './pages/salaries/SalariesPage';
+import { SeverancePage } from './pages/severance/SeverancePage';
 import { ExpensesPage } from './pages/expenses/ExpensesPage';
 import { PjPage } from './pages/pj/PjPage';
 import { GmailGate } from './pages/gmail/GmailGate';
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/bank-accounts" element={<BankAccountsPage />} />
             <Route path="/investments" element={<InvestmentsPage />} />
             <Route path="/salaries" element={<SalariesPage />} />
+            <Route path="/severance" element={<SeverancePage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/pj" element={<PjPage />} />
             <Route path="/email" element={<GmailGate />} />

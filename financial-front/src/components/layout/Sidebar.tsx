@@ -5,6 +5,7 @@ import {
   CircleDot,
   CreditCard,
   DollarSign,
+  Handshake,
   Home,
   LogOut,
   Mail,
@@ -27,6 +28,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   'shopping-cart': ShoppingCart,
   'trending-up': TrendingUp,
   briefcase: Briefcase,
+  handshake: Handshake,
   mail: Mail,
 };
 

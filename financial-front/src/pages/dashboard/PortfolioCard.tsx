@@ -12,7 +12,7 @@ export function PortfolioCard({ portfolio }: Props) {
   const ageLabel = diffHours < 1 ? 'há menos de 1 hora' : `há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-soft">
+    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 shadow-soft">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-slate-400" />
