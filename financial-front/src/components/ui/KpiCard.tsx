@@ -5,7 +5,7 @@ export type KpiAccent = 'emerald' | 'red' | 'amber' | 'indigo' | 'slate';
 
 type KpiCardProps = {
   title: string;
-  value: string;
+  value: ReactNode;
   icon: ReactNode;
   variant?: Variant;
   /** Cor de identidade do card (faixa lateral, icone e toque no fundo) — WORK-32, D-8. */

@@ -113,6 +113,7 @@ export function EvolutionChart({ data, selectedYear, selectedMonth, visible, mas
                 fill={SALARY_COLOR}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={36}
+                animationDuration={1500}
                 cursor="pointer"
                 onClick={(entry) => toggle('salary', entry.originalDataIndex)}
               >
@@ -126,6 +127,7 @@ export function EvolutionChart({ data, selectedYear, selectedMonth, visible, mas
                 fill={EXPENSES_COLOR}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={36}
+                animationDuration={1500}
                 cursor="pointer"
                 onClick={(entry) => toggle('expenses', entry.originalDataIndex)}
               >

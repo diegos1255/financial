@@ -1,5 +1,7 @@
 import { FileText, Pencil } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { FillBar } from '../../components/ui/FillBar';
+import { AnimatedCurrency } from '../../components/ui/AnimatedCurrency';
 import { formatCurrency } from '../../utils/currency';
 import type { SalaryMonth } from '../../types/salary';
 import { salaryTone } from './salaryTone';
@@ -44,7 +46,7 @@ export function SalarySummaryCard({ data, loading, onEditTotal }: Props) {
         </div>
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Recebido</div>
-          <div className={`mt-1 text-xl font-semibold tabular-nums ${tone.text}`}>{formatCurrency(received)}</div>
+          <div className={`mt-1 text-xl font-semibold tabular-nums ${tone.text}`}><AnimatedCurrency value={received} /></div>
         </div>
         {remaining !== null && (
           <div>
@@ -61,18 +63,7 @@ export function SalarySummaryCard({ data, loading, onEditTotal }: Props) {
       <div className="mt-4 flex flex-wrap items-center gap-3">
         {expected !== null && (
           <div className="flex flex-1 items-center gap-3" style={{ minWidth: '12rem' }}>
-            <div
-              className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"
-              role="progressbar"
-              aria-valuenow={percent}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            >
-              <div
-                className={`h-full rounded-full transition-all ${tone.bar}`}
-                style={{ width: `${percent}%` }}
-              />
-            </div>
+            <FillBar percent={percent} barClass={tone.bar} />
             <span className="text-sm tabular-nums text-slate-600">{percent}%</span>
           </div>
         )}

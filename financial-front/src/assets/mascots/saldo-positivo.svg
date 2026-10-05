@@ -1,7 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="10 4 220 252" width="220" height="252">
   <title>Saldo positivo</title>
+  <style>
+    .hop { animation: hop 1.4s ease-in-out infinite; transform-box: view-box; transform-origin: 120px 250px; }
+    @keyframes hop {
+      0%, 55%, 100% { transform: translateY(0) scale(1, 1); }
+      62% { transform: translateY(0) scale(1.04, 0.96); }
+      75% { transform: translateY(-10px) scale(0.98, 1.03); }
+      88% { transform: translateY(0) scale(1, 1); }
+    }
+    .confetti line { animation: twinkle 1.6s ease-in-out infinite; }
+    .confetti line:nth-child(2n) { animation-delay: 0.4s; }
+    .confetti line:nth-child(3n) { animation-delay: 0.8s; }
+    .confetti line:nth-child(5n) { animation-delay: 1.2s; }
+    @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+    @media (prefers-reduced-motion: reduce) { .hop, .confetti line { animation: none; } }
+  </style>
   <!-- confete -->
-  <g stroke-linecap="round" stroke-width="7">
+  <g class="confetti" stroke-linecap="round" stroke-width="7">
     <line x1="30" y1="40" x2="38" y2="54" stroke="#a78bfa"/>
     <line x1="70" y1="14" x2="80" y2="24" stroke="#fde047"/>
     <line x1="188" y1="22" x2="198" y2="12" stroke="#f9a8d4"/>
@@ -11,6 +26,7 @@
     <line x1="222" y1="140" x2="214" y2="152" stroke="#fde047"/>
     <line x1="22" y1="170" x2="32" y2="180" stroke="#f9a8d4"/>
   </g>
+  <g class="hop">
   <g fill="none" stroke="#111" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
     <!-- braços pra cima -->
     <path d="M74 150 C60 120 52 96 48 70"/>
@@ -37,4 +53,5 @@
   <!-- sorrisão -->
   <path d="M96 148 Q121 176 146 148 Z" fill="#fff" stroke="#111" stroke-width="7" stroke-linejoin="round"/>
   <path d="M110 160 Q121 168 132 160" fill="none" stroke="#f87171" stroke-width="6" stroke-linecap="round"/>
+  </g>
 </svg>
