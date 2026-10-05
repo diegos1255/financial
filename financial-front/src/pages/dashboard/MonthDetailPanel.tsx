@@ -8,6 +8,7 @@ import { monthLabel } from '../../utils/months';
 import { extractApiError } from '../../utils/apiError';
 import type { MonthExpenseItem } from '../../types/dashboard';
 import type { SalaryPayment } from '../../types/salary';
+import { ExpenseTypeBadge } from '../../components/expenses/ExpenseTypeBadge';
 
 export type MonthDetailKind = 'expenses' | 'salary';
 
@@ -17,18 +18,6 @@ type Props = {
   month: number;
   mask: (value: string) => string;
   onClose: () => void;
-};
-
-const TYPE_LABELS: Record<MonthExpenseItem['type'], string> = {
-  FIXED: 'Fixa',
-  INSTALLMENT: 'Parcela',
-  VARIABLE: 'Variável',
-};
-
-const TYPE_CLASSES: Record<MonthExpenseItem['type'], string> = {
-  FIXED: 'bg-blue-50 text-blue-700',
-  INSTALLMENT: 'bg-amber-50 text-amber-700',
-  VARIABLE: 'bg-violet-50 text-violet-700',
 };
 
 type Loaded =
@@ -109,7 +98,7 @@ export function MonthDetailPanel({ kind, year, month, mask, onClose }: Props) {
                     </span>
                   </td>
                   <td className="px-4 py-2">
-                    <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${TYPE_CLASSES[i.type]}`}>{TYPE_LABELS[i.type]}</span>
+                    <ExpenseTypeBadge type={i.type} />
                   </td>
                   <td className="whitespace-nowrap px-4 py-2 text-right font-medium tabular-nums text-slate-900">
                     {mask(formatCurrency(i.amount))}

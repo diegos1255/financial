@@ -28,7 +28,7 @@ export function Table<T>({
   expandedRowContent,
 }: TableProps<T>) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-soft">
       <table className="w-full text-sm">
         <thead className="bg-slate-50 text-slate-600">
           <tr>

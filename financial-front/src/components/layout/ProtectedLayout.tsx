@@ -15,7 +15,8 @@ export function ProtectedLayout() {
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <Topbar />
-          <main className="flex-1 overflow-y-auto p-6">
+          {/* pb-24: respiro para a bolinha flutuante do chat nao cobrir paginacao/acoes no fim da pagina */}
+          <main className="flex-1 overflow-y-auto p-6 pb-24">
             <Outlet />
           </main>
         </div>

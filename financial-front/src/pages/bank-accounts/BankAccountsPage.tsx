@@ -1,24 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
+import { CreditCard, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
-import { Table } from '../../components/ui/Table';
+import { BankCard } from './BankCard';
+import { cardHolderName } from '../../utils/cardHolderName';
+import { useAuth } from '../../hooks/useAuth';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
-import { Pagination } from '../../components/ui/Pagination';
 import { BankAccountFormModal } from './BankAccountFormModal';
 import { bankAccountService } from '../../services/bankAccountService';
 import { extractApiError } from '../../utils/apiError';
 import type { BankAccount } from '../../types/bankAccount';
 
-const PAGE_SIZE = 10;
-
 export function BankAccountsPage() {
+  const { user } = useAuth();
   const [allItems, setAllItems] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [includeInactive, setIncludeInactive] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<BankAccount | null>(null);
   const [removing, setRemoving] = useState<BankAccount | null>(null);
@@ -47,10 +46,7 @@ export function BankAccountsPage() {
     });
   }, [allItems, q, includeInactive]);
 
-  useEffect(() => { setCurrentPage(0); }, [q, includeInactive]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageItems = filtered.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
 
   async function handleConfirmRemove() {
     if (!removing) return;
@@ -81,6 +77,9 @@ export function BankAccountsPage() {
     <div>
       <PageHeader
         title="Contas Bancárias"
+        subtitle="Contas onde entram e saem os valores"
+        icon={CreditCard}
+        tone="blue"
         actions={
           <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
             <Plus className="h-4 w-4" />
@@ -111,38 +110,35 @@ export function BankAccountsPage() {
         </label>
       </div>
 
-      <Table<BankAccount>
-        rowKey={(r) => r.id}
-        loading={loading}
-        empty="Nenhuma conta cadastrada."
-        columns={[
-          {
-            header: 'Nome',
-            render: (r) => (
-              <span className={r.active ? '' : 'text-slate-400 line-through'}>
-                {r.name}
-                {!r.active && <span className="ml-2 text-xs text-red-400">(inativo)</span>}
-              </span>
-            ),
-          },
-          { header: 'Descrição', render: (r) => r.description ?? '—' },
-          {
-            header: 'Ações',
-            align: 'right',
-            width: '120px',
-            render: (r) => (
-              <div className="flex justify-end gap-1">
-                {r.active ? (
+      {loading ? (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-[repeat(auto-fill,minmax(320px,380px))]">
+          <div className="aspect-[1.586] animate-pulse rounded-2xl bg-slate-200" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <p className="rounded-2xl border border-slate-200 bg-white py-10 text-center text-sm text-slate-500 shadow-soft">
+          Nenhuma conta cadastrada.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-[repeat(auto-fill,minmax(320px,380px))]">
+          {filtered.map((r) => (
+            <BankCard
+              key={r.id}
+              name={r.name}
+              description={r.description}
+              holderName={cardHolderName(user?.name ?? '')}
+              inactive={!r.active}
+              actions={
+                r.active ? (
                   <>
                     <button
-                      className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-accent transition-colors"
+                      className="rounded-md p-1.5 opacity-80 hover:bg-black/10 hover:opacity-100 transition"
                       onClick={() => { setEditing(r); setFormOpen(true); }}
                       title="Editar"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
-                      className="rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      className="rounded-md p-1.5 opacity-80 hover:bg-black/10 hover:opacity-100 transition"
                       onClick={() => setRemoving(r)}
                       title="Desativar"
                     >
@@ -151,27 +147,18 @@ export function BankAccountsPage() {
                   </>
                 ) : (
                   <button
-                    className="rounded p-1.5 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    className="rounded-md p-1.5 opacity-80 hover:bg-black/10 hover:opacity-100 transition"
                     onClick={() => handleReactivate(r)}
                     title="Reativar"
                   >
                     <RotateCcw className="h-4 w-4" />
                   </button>
-                )}
-              </div>
-            ),
-          },
-        ]}
-        data={pageItems}
-      />
-
-      <Pagination
-        page={currentPage}
-        totalPages={totalPages}
-        totalElements={filtered.length}
-        size={PAGE_SIZE}
-        onPageChange={setCurrentPage}
-      />
+                )
+              }
+            />
+          ))}
+        </div>
+      )}
 
       <BankAccountFormModal
         open={formOpen}

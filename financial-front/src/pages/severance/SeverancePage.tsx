@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Handshake, Pencil, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { Table } from '../../components/ui/Table';
@@ -61,6 +61,8 @@ export function SeverancePage() {
       <PageHeader
         title="Rescisão"
         subtitle={data?.description ?? 'Recebimentos da rescisão'}
+        icon={Handshake}
+        tone="teal"
         actions={
           <Button
             onClick={() => {
