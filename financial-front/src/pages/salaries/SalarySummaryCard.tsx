@@ -2,13 +2,7 @@ import { FileText, Pencil } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/currency';
 import type { SalaryMonth } from '../../types/salary';
-
-// Faixas fixas do valor recebido (WORK-30, D-5) — independem do total da NF.
-function receivedTone(received: number) {
-  if (received <= 5000) return { text: 'text-red-600', bar: 'bg-red-500' };
-  if (received <= 10000) return { text: 'text-orange-600', bar: 'bg-orange-500' };
-  return { text: 'text-emerald-600', bar: 'bg-emerald-500' };
-}
+import { salaryTone } from './salaryTone';
 
 type Props = {
   data: SalaryMonth | null;
@@ -26,7 +20,7 @@ export function SalarySummaryCard({ data, loading, onEditTotal }: Props) {
   const remaining = data.remainingAmount;
   const overpaid = remaining !== null && remaining < 0;
   const percent = expected ? Math.min(100, Math.round((received / expected) * 100)) : 0;
-  const tone = receivedTone(received);
+  const tone = salaryTone(received);
 
   return (
     <div className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-soft">

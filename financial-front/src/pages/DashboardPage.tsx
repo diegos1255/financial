@@ -1,23 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowDownCircle, ArrowUpCircle, Eye, EyeOff, PieChart as PieIcon, Receipt, Wallet } from 'lucide-react';
-import { PageHeader } from '../components/layout/PageHeader';
 import { KpiCard } from '../components/ui/KpiCard';
 import { PieChart } from '../components/ui/PieChart';
 import { Select } from '../components/ui/Select';
 import { CategoryExpensesModal } from './dashboard/CategoryExpensesModal';
 import { PortfolioCard } from './dashboard/PortfolioCard';
 import { SeveranceCard } from './dashboard/SeveranceCard';
+import { EvolutionChart } from './dashboard/EvolutionChart';
+import { DashboardHero } from './dashboard/DashboardHero';
+import { useAuth } from '../hooks/useAuth';
+import { salaryTone } from './salaries/salaryTone';
 import { dashboardService } from '../services/dashboardService';
 import { investmentService } from '../services/investmentService';
 import { pjService } from '../services/pjService';
 import { severanceService } from '../services/severanceService';
-import type { BalanceResponse, CategoryExpense } from '../types/dashboard';
+import { salaryService } from '../services/salaryService';
+import type { BalanceResponse, CategoryExpense, MonthEvolution } from '../types/dashboard';
 import type { InvestmentPortfolioResponse } from '../types/investment';
 import type { Severance } from '../types/severance';
+import type { SalaryMonth } from '../types/salary';
 import { formatCurrency } from '../utils/currency';
 import { MONTHS, monthLabel, yearRange } from '../utils/months';
 import { extractApiError } from '../utils/apiError';
 import { useValuesVisibility } from '../hooks/useValuesVisibility';
+import { SectionTitle } from '../components/ui/SectionTitle';
+import { SECTION_CARD_CLASSES } from '../components/ui/sectionCard';
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -46,17 +53,46 @@ function BreakdownChip({ tone, label, value }: { tone: ChipTone; label: string; 
   );
 }
 
+type PjTaxes = { das: number; inss: number; accounting: number };
+const NO_TAXES: PjTaxes = { das: 0, inss: 0, accounting: 0 };
+
+function SalaryProgress({ received, expected, mask }: { received: number; expected: number; mask: (v: string) => string }) {
+  const percent = expected > 0 ? Math.min(100, Math.round((received / expected) * 100)) : 0;
+  const tone = salaryTone(received);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span>de {mask(formatCurrency(expected))} previstos</span>
+      <div className="flex items-center gap-2">
+        <div
+          className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100"
+          role="progressbar"
+          aria-valuenow={percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className={`h-full rounded-full ${tone.bar}`} style={{ width: `${percent}%` }} />
+        </div>
+        <span className="tabular-nums">{percent}%</span>
+      </div>
+    </div>
+  );
+}
+
+
 export function DashboardPage() {
   const [year, setYear] = useState(CURRENT_YEAR);
   const [month, setMonth] = useState(CURRENT_MONTH);
   const [balance, setBalance] = useState<BalanceResponse | null>(null);
   const [byCategory, setByCategory] = useState<CategoryExpense[]>([]);
   const [portfolio, setPortfolio] = useState<InvestmentPortfolioResponse | null>(null);
-  const [prevMonthTaxes, setPrevMonthTaxes] = useState<number>(0);
+  const [prevMonthTaxes, setPrevMonthTaxes] = useState<PjTaxes>(NO_TAXES);
+  const [salaryMonth, setSalaryMonth] = useState<SalaryMonth | null>(null);
+  const [evolution, setEvolution] = useState<MonthEvolution[]>([]);
   const [severance, setSeverance] = useState<Severance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { visible, toggle, mask } = useValuesVisibility();
+  const { user } = useAuth();
 
   const prevMonth = month === 1 ? 12 : month - 1;
   const prevYear = month === 1 ? year - 1 : year;
@@ -76,17 +112,20 @@ export function DashboardPage() {
       investmentService.getPortfolio().catch(() => null),
       pjService.list({ year: prevYear, month: prevMonth }).catch(() => []),
       severanceService.get().catch(() => null),
+      salaryService.getMonth(year, month).catch(() => null),
+      dashboardService.evolution({ year, month, months: 6 }).catch(() => []),
     ])
-      .then(([b, c, p, pjPrev, sev]) => {
+      .then(([b, c, p, pjPrev, sev, sal, evo]) => {
         if (!cancelled) {
           setBalance(b);
           setByCategory(c);
           setPortfolio(p);
           setSeverance(sev);
-          const taxes = pjPrev
-            .filter((e) => e.type === 'DAS' || e.type === 'INSS' || e.type === 'ACCOUNTING')
-            .reduce((sum, e) => sum + e.amount, 0);
-          setPrevMonthTaxes(taxes);
+          setSalaryMonth(sal);
+          setEvolution(evo);
+          const sumOf = (type: string) =>
+            pjPrev.filter((e) => e.type === type).reduce((sum, e) => sum + e.amount, 0);
+          setPrevMonthTaxes({ das: sumOf('DAS'), inss: sumOf('INSS'), accounting: sumOf('ACCOUNTING') });
         }
       })
       .catch((err) => {
@@ -103,6 +142,8 @@ export function DashboardPage() {
   const balanceVariant = balance && balance.balance < 0 ? 'negative' : 'positive';
   const hasPortfolio = !!portfolio && portfolio.items.length > 0;
   const hasSeverance = severance?.totalAmount != null;
+  const taxesTotal = prevMonthTaxes.das + prevMonthTaxes.inss + prevMonthTaxes.accounting;
+  const expectedSalary = salaryMonth?.expectedAmount ?? null;
   const totalByCategory = useMemo(
     () => byCategory.reduce((sum, c) => sum + c.total, 0),
     [byCategory]
@@ -114,9 +155,14 @@ export function DashboardPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Dashboard"
-        subtitle={`Visão geral do mês ${monthLabel(month)}`}
+      <DashboardHero
+        firstName={user?.name.split(' ')[0] ?? ''}
+        year={year}
+        month={month}
+        balance={balance}
+        salaryMonth={salaryMonth}
+        loading={loading}
+        visible={visible}
         actions={
           <>
             <button
@@ -158,13 +204,19 @@ export function DashboardPage() {
           value={mask(formatCurrency(balance?.salary ?? 0))}
           icon={<ArrowUpCircle className="h-5 w-5" />}
           variant="neutral"
-          subtitle={loading ? 'Carregando...' : undefined}
+          accent="emerald"
+          subtitle={
+            loading ? 'Carregando...' : expectedSalary !== null && balance ? (
+              <SalaryProgress received={balance.salary} expected={expectedSalary} mask={mask} />
+            ) : undefined
+          }
         />
         <KpiCard
           title="Total de Despesas"
           value={mask(formatCurrency(balance?.totalExpenses ?? 0))}
           icon={<ArrowDownCircle className="h-5 w-5" />}
           variant="neutral"
+          accent="red"
           subtitle={
             balance ? (
               <div className="grid grid-cols-2 gap-1.5">
@@ -181,25 +233,32 @@ export function DashboardPage() {
           value={mask(formatCurrency(balance?.balance ?? 0))}
           icon={<Wallet className="h-5 w-5" />}
           variant={balanceVariant}
+          accent={balance && balance.balance < 0 ? 'red' : 'emerald'}
         />
         <KpiCard
           title="Impostos PJ"
-          value={mask(formatCurrency(prevMonthTaxes))}
+          value={mask(formatCurrency(taxesTotal))}
           icon={<Receipt className="h-5 w-5" />}
-          variant="negative"
-          subtitle={`Referente a ${monthLabel(prevMonth)}/${prevYear}`}
+          variant={taxesTotal > 0 ? 'negative' : 'neutral'}
+          accent="amber"
+          subtitle={
+            <div className="flex flex-col gap-1.5">
+              <span>Referente a {monthLabel(prevMonth)}/{prevYear}</span>
+              {taxesTotal > 0 && (
+                <div className="grid grid-cols-2 gap-1.5">
+                  <BreakdownChip tone="blue" label="DAS" value={mask(formatCurrency(prevMonthTaxes.das))} />
+                  <BreakdownChip tone="violet" label="INSS" value={mask(formatCurrency(prevMonthTaxes.inss))} />
+                  <BreakdownChip tone="amber" label="Contabilidade" value={mask(formatCurrency(prevMonthTaxes.accounting))} />
+                </div>
+              )}
+            </div>
+          }
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-soft">
-          <div className="flex items-center gap-2 mb-3">
-            <PieIcon className="h-4 w-4 text-slate-400" />
-            <h2 className="text-xs font-semibold text-slate-500 tracking-wider uppercase">
-              Despesas por categoria
-            </h2>
-          </div>
-          <div className="-mx-5 border-t border-slate-100 mb-4" />
+        <div className={SECTION_CARD_CLASSES}>
+          <SectionTitle icon={<PieIcon className="h-4 w-4" />} title="Despesas por categoria" tone="indigo" />
           <PieChart
             data={byCategory.map((c) => ({
               name: c.categoryName,
@@ -210,6 +269,7 @@ export function DashboardPage() {
             centerTotal={totalByCategory}
             centerLabel="SAÍDAS NO MÊS"
             centerValueOverride={visible ? undefined : mask('')}
+            maskValue={mask}
             onSliceClick={handleSliceClick}
           />
         </div>
@@ -224,6 +284,10 @@ export function DashboardPage() {
             {hasSeverance && <SeveranceCard severance={severance} mask={mask} />}
           </div>
         )}
+      </div>
+
+      <div className="mb-4">
+        <EvolutionChart key={`${year}-${month}`} data={evolution} selectedYear={year} selectedMonth={month} visible={visible} mask={mask} />
       </div>
 
       <CategoryExpensesModal

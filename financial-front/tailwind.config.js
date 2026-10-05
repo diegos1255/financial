@@ -21,6 +21,15 @@ export default {
       boxShadow: {
         soft: '0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04)',
       },
+      keyframes: {
+        'slide-down': {
+          from: { opacity: '0', transform: 'translateY(-6px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'slide-down': 'slide-down 180ms ease-out',
+      },
     },
   },
   plugins: [],

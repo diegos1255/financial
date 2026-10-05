@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Cell, Pie, PieChart as RePieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Cell, Pie, PieChart as RePieChart, ResponsiveContainer } from 'recharts';
+import type { PieSectorDataItem } from 'recharts';
 import { formatCurrency } from '../../utils/currency';
 
 type Slice = {
@@ -17,6 +18,8 @@ type PieChartProps = {
   centerValueOverride?: string;
   emptyMessage?: string;
   onSliceClick?: (categoryId: string, categoryName: string) => void;
+  /** Mascara o valor do tooltip quando os valores estao ocultos (olhinho). */
+  maskValue?: (value: string) => string;
 };
 
 const PALETTE = [
@@ -32,6 +35,27 @@ const PALETTE = [
   '#0f172a', // quase preto
   '#86efac', // verde claro
 ];
+
+type HoveredSlice = { name: string; value: number; color: string; x: number; y: number; left: boolean };
+
+const RADIAN = Math.PI / 180;
+const TOOLTIP_GAP = 12;
+
+// Tooltip proprio, ancorado do lado de FORA da fatia (na direcao dela):
+// o do Recharts seguia o mouse e cobria o total no centro do anel.
+function hoveredFrom(sector: PieSectorDataItem, color: string): HoveredSlice {
+  const angle = -(sector.midAngle ?? 0) * RADIAN;
+  const radius = sector.outerRadius + TOOLTIP_GAP;
+  const x = sector.cx + radius * Math.cos(angle);
+  return {
+    name: String(sector.name ?? ''),
+    value: Number(sector.value),
+    color,
+    x,
+    y: sector.cy + radius * Math.sin(angle),
+    left: x < sector.cx,
+  };
+}
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -53,8 +77,10 @@ export function PieChart({
   centerValueOverride,
   emptyMessage = 'Sem dados para o período.',
   onSliceClick,
+  maskValue = (v) => v,
 }: PieChartProps) {
   const reducedMotion = usePrefersReducedMotion();
+  const [hovered, setHovered] = useState<HoveredSlice | null>(null);
 
   if (data.length === 0) {
     return (
@@ -84,6 +110,10 @@ export function PieChart({
               animationDuration={900}
               animationEasing="ease-out"
               style={{ cursor: onSliceClick ? 'pointer' : 'default' }}
+              onMouseEnter={(sector, index) =>
+                setHovered(hoveredFrom(sector, data[index]?.color ?? PALETTE[index % PALETTE.length]))
+              }
+              onMouseLeave={() => setHovered(null)}
               onClick={(data) => {
                 const id = data?.payload?.categoryId as string | undefined;
                 if (onSliceClick && id) {
@@ -95,16 +125,22 @@ export function PieChart({
                 <Cell key={i} fill={entry.color ?? PALETTE[i % PALETTE.length]} />
               ))}
             </Pie>
-            <Tooltip
-              formatter={(v) => formatCurrency(Number(v))}
-              contentStyle={{
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                fontSize: '13px',
-              }}
-            />
           </RePieChart>
         </ResponsiveContainer>
+        {hovered && (
+          <div
+            className="pointer-events-none absolute z-10 flex items-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[13px] text-slate-700 shadow-md"
+            style={{
+              left: hovered.x,
+              top: hovered.y,
+              transform: `translate(${hovered.left ? '-100%' : '0'}, -50%)`,
+            }}
+          >
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: hovered.color }} />
+            <span>{hovered.name}</span>
+            <span className="font-semibold tabular-nums text-slate-900">{maskValue(formatCurrency(hovered.value))}</span>
+          </div>
+        )}
         {centerTotal !== undefined && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400">

@@ -1,6 +1,8 @@
 import { TrendingUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import type { InvestmentPortfolioResponse } from '../../types/investment';
+import { SectionTitle } from '../../components/ui/SectionTitle';
+import { SECTION_CARD_CLASSES } from '../../components/ui/sectionCard';
 
 type Props = {
   portfolio: InvestmentPortfolioResponse;
@@ -12,17 +14,17 @@ export function PortfolioCard({ portfolio }: Props) {
   const ageLabel = diffHours < 1 ? 'há menos de 1 hora' : `há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
 
   return (
-    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 shadow-soft">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-slate-400" />
-          <h2 className="text-xs font-semibold text-slate-500 tracking-wider uppercase">Portfólio</h2>
-        </div>
-        <span className="text-lg font-semibold text-slate-900 tabular-nums">
-          {formatCurrency(portfolio.totalMarketValue)}
-        </span>
-      </div>
-      <div className="-mx-5 border-t border-slate-100 mb-4" />
+    <div className={`h-full ${SECTION_CARD_CLASSES}`}>
+      <SectionTitle
+        icon={<TrendingUp className="h-4 w-4" />}
+        title="Portfólio"
+        tone="blue"
+        right={
+          <span className="text-lg font-semibold text-slate-900 tabular-nums">
+            {formatCurrency(portfolio.totalMarketValue)}
+          </span>
+        }
+      />
       <table className="w-full text-sm">
         <thead>
           <tr className="text-xs text-slate-400 uppercase tracking-wide">
