@@ -479,6 +479,100 @@
       ]
     },
     {
+      "name": "Rescisão",
+      "description": "Rescisão do usuário (WORK-31): valor total + recebimentos lançados à mão. Uma por usuário. Data do recebimento não pode ser futura. DELETE de recebimento é HARD.",
+      "item": [
+        {
+          "name": "GET rescisão (total + recebimentos)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/severance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "severance"]
+            }
+          }
+        },
+        {
+          "name": "PUT total da rescisão",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"totalAmount\": 38640.00,\n  \"description\": \"Rescisão empresa X\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/severance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "severance"]
+            }
+          }
+        },
+        {
+          "name": "POST recebimento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    const last = body.payments[body.payments.length - 1];",
+                  "    if (last) pm.environment.set('severancePaymentId', last.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentDate\": \"2026-09-30\",\n  \"amount\": 2576.12,\n  \"bankAccountId\": \"{{bankAccountId}}\",\n  \"description\": \"Parcela 2/15\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/severance/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "severance", "payments"]
+            }
+          }
+        },
+        {
+          "name": "PUT recebimento",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentDate\": \"2026-09-29\",\n  \"amount\": 2576.12,\n  \"bankAccountId\": \"{{bankAccountId}}\",\n  \"description\": \"Parcela 2/15\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/severance/payments/{{severancePaymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "severance", "payments", "{{severancePaymentId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE recebimento (hard)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/severance/payments/{{severancePaymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "severance", "payments", "{{severancePaymentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Despesas",
       "description": "Expense FIXED ou INSTALLMENT. INSTALLMENT gera parcelas automáticas. Cancelamento via POST /{id}/cancel (cascata em parcelas PENDING). Update LIMITADO a description/categoryId/bankAccountId.",
       "item": [
