@@ -38,5 +38,12 @@ SELECT gen_random_uuid(), 'PJ', '/pj', 'briefcase', 7, true, now(), now()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE label = 'PJ');
 
 INSERT INTO menus (id, label, route, icon, sort_order, active, created_date, updated_date)
-SELECT gen_random_uuid(), 'Email', '/email', 'mail', 8, true, now(), now()
+SELECT gen_random_uuid(), 'Rescisão', '/severance', 'handshake', 8, true, now(), now()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE label = 'Rescisão');
+
+INSERT INTO menus (id, label, route, icon, sort_order, active, created_date, updated_date)
+SELECT gen_random_uuid(), 'Email', '/email', 'mail', 9, true, now(), now()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE label = 'Email');
+
+-- Email desceu uma posicao com a entrada da Rescisao (WORK-31).
+UPDATE menus SET sort_order = 9 WHERE label = 'Email' AND sort_order = 8;

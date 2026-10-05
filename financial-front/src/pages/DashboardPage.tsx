@@ -6,11 +6,14 @@ import { PieChart } from '../components/ui/PieChart';
 import { Select } from '../components/ui/Select';
 import { CategoryExpensesModal } from './dashboard/CategoryExpensesModal';
 import { PortfolioCard } from './dashboard/PortfolioCard';
+import { SeveranceCard } from './dashboard/SeveranceCard';
 import { dashboardService } from '../services/dashboardService';
 import { investmentService } from '../services/investmentService';
 import { pjService } from '../services/pjService';
+import { severanceService } from '../services/severanceService';
 import type { BalanceResponse, CategoryExpense } from '../types/dashboard';
 import type { InvestmentPortfolioResponse } from '../types/investment';
+import type { Severance } from '../types/severance';
 import { formatCurrency } from '../utils/currency';
 import { MONTHS, monthLabel, yearRange } from '../utils/months';
 import { extractApiError } from '../utils/apiError';
@@ -50,6 +53,7 @@ export function DashboardPage() {
   const [byCategory, setByCategory] = useState<CategoryExpense[]>([]);
   const [portfolio, setPortfolio] = useState<InvestmentPortfolioResponse | null>(null);
   const [prevMonthTaxes, setPrevMonthTaxes] = useState<number>(0);
+  const [severance, setSeverance] = useState<Severance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { visible, toggle, mask } = useValuesVisibility();
@@ -71,12 +75,14 @@ export function DashboardPage() {
       dashboardService.expensesByCategory({ year, month }),
       investmentService.getPortfolio().catch(() => null),
       pjService.list({ year: prevYear, month: prevMonth }).catch(() => []),
+      severanceService.get().catch(() => null),
     ])
-      .then(([b, c, p, pjPrev]) => {
+      .then(([b, c, p, pjPrev, sev]) => {
         if (!cancelled) {
           setBalance(b);
           setByCategory(c);
           setPortfolio(p);
+          setSeverance(sev);
           const taxes = pjPrev
             .filter((e) => e.type === 'DAS' || e.type === 'INSS' || e.type === 'ACCOUNTING')
             .reduce((sum, e) => sum + e.amount, 0);
@@ -95,6 +101,8 @@ export function DashboardPage() {
   }, [year, month]);
 
   const balanceVariant = balance && balance.balance < 0 ? 'negative' : 'positive';
+  const hasPortfolio = !!portfolio && portfolio.items.length > 0;
+  const hasSeverance = severance?.totalAmount != null;
   const totalByCategory = useMemo(
     () => byCategory.reduce((sum, c) => sum + c.total, 0),
     [byCategory]
@@ -206,8 +214,15 @@ export function DashboardPage() {
           />
         </div>
 
-        {portfolio && portfolio.items.length > 0 && (
-          <PortfolioCard portfolio={portfolio} />
+        {(hasPortfolio || hasSeverance) && (
+          <div className="flex flex-col gap-4">
+            {hasPortfolio && (
+              <div className="flex-1">
+                <PortfolioCard portfolio={portfolio} />
+              </div>
+            )}
+            {hasSeverance && <SeveranceCard severance={severance} mask={mask} />}
+          </div>
         )}
       </div>
 
