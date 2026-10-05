@@ -8,6 +8,7 @@ import com.financial.exception.InvalidExpenseTypeException;
 import com.financial.exception.InvalidPaymentDateException;
 import com.financial.exception.InvalidPhotoException;
 import com.financial.exception.LoginAlreadyExistsException;
+import com.financial.exception.PaymentDateInFutureException;
 import com.financial.exception.ResourceConflictException;
 import com.financial.exception.ResourceNotFoundException;
 import com.financial.exception.SalaryPaymentOutOfCompetenceException;
@@ -63,6 +64,12 @@ public class ApiErrorHandler {
     public ResponseEntity<ApiError> handleSalaryPaymentOutOfCompetence(SalaryPaymentOutOfCompetenceException e) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(ApiError.of(422, "PAYMENT_OUT_OF_COMPETENCE", e.getMessage()));
+    }
+
+    @ExceptionHandler(PaymentDateInFutureException.class)
+    public ResponseEntity<ApiError> handlePaymentDateInFuture(PaymentDateInFutureException e) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(ApiError.of(422, "PAYMENT_DATE_IN_FUTURE", e.getMessage()));
     }
 
     @ExceptionHandler(InvalidExpenseTypeException.class)
