@@ -4,6 +4,11 @@ import com.financial.auth.CurrentUser;
 import com.financial.dto.BalanceBreakdown;
 import com.financial.dto.BalanceResponse;
 import com.financial.dto.CategoryExpenseResponse;
+import com.financial.dto.MonthEvolutionResponse;
+import com.financial.dto.MonthExpenseItemResponse;
+import com.financial.model.Expense;
+import com.financial.model.Installment;
+import com.financial.model.enums.InstallmentStatus;
 import com.financial.repository.DashboardRepository;
 import jakarta.persistence.Tuple;
 import org.springframework.stereotype.Service;
@@ -17,6 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Service
 @Transactional(readOnly = true)
@@ -29,10 +36,58 @@ public class DashboardService {
     }
 
     public BalanceResponse balance(Integer year, Integer month) {
+        return computeBalance(CurrentUser.id(), resolveYearMonth(year, month));
+    }
+
+    /** Salario x despesas dos {@code months} meses terminando no mes selecionado, do mais antigo ao mais recente. */
+    public List<MonthEvolutionResponse> evolution(Integer year, Integer month, int months) {
+        UUID userId = CurrentUser.id();
+        YearMonth last = resolveYearMonth(year, month);
+        return IntStream.range(0, months)
+                .mapToObj(i -> last.minusMonths(months - 1L - i))
+                .map(ym -> {
+                    BalanceResponse b = computeBalance(userId, ym);
+                    return new MonthEvolutionResponse(b.year(), b.month(), b.salary(), b.totalExpenses(), b.balance());
+                })
+                .toList();
+    }
+
+    /** Itens que compoem o total de despesas do mes (mesmas regras do balanco), maior valor primeiro. */
+    public List<MonthExpenseItemResponse> monthExpenses(Integer year, Integer month) {
+        UUID userId = CurrentUser.id();
         YearMonth ym = resolveYearMonth(year, month);
         LocalDate startOfMonth = ym.atDay(1);
         LocalDate endOfMonth = ym.atEndOfMonth();
-        UUID userId = CurrentUser.id();
+
+        Stream<MonthExpenseItemResponse> fixed = repository.listFixedExpenses(userId, endOfMonth).stream()
+                .map(e -> item(e, null, e.getTotalAmount(), null));
+        Stream<MonthExpenseItemResponse> installments = repository.listInstallments(userId, startOfMonth, endOfMonth).stream()
+                .map(i -> item(i.getExpense(), installmentDate(i), i.getAmount(),
+                        i.getInstallmentNumber() + "/" + i.getExpense().getInstallmentsCount()));
+        Stream<MonthExpenseItemResponse> variable = repository.listVariableExpenses(userId, startOfMonth, endOfMonth).stream()
+                .map(e -> item(e, e.getPurchaseDate(), e.getTotalAmount(), null));
+
+        return Stream.of(fixed, installments, variable)
+                .flatMap(s -> s)
+                .sorted(Comparator.comparing(MonthExpenseItemResponse::amount).reversed())
+                .toList();
+    }
+
+    private static MonthExpenseItemResponse item(Expense e, LocalDate date, BigDecimal amount, String installmentLabel) {
+        return new MonthExpenseItemResponse(e.getId(), e.getDescription(), e.getCategory().getName(),
+                e.getCategory().getColor(), e.getExpenseType(), date, amount, installmentLabel);
+    }
+
+    // Parcela antecipada conta no mes em que foi paga (mesma regra de sumInstallments).
+    private static LocalDate installmentDate(Installment i) {
+        return i.getStatus() == InstallmentStatus.ANTICIPATED && i.getPaidAt() != null
+                ? i.getPaidAt().toLocalDate()
+                : i.getDueDate();
+    }
+
+    private BalanceResponse computeBalance(UUID userId, YearMonth ym) {
+        LocalDate startOfMonth = ym.atDay(1);
+        LocalDate endOfMonth = ym.atEndOfMonth();
 
         BigDecimal salary = repository.sumSalary(userId, ym.getYear(), ym.getMonthValue());
         BigDecimal fixed = repository.sumFixedExpenses(userId, endOfMonth);
