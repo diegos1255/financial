@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
+import { Activity, Layers, Pencil, Plus, RotateCcw, Search, Trash2, TrendingUp, Wallet } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
+import { KpiCard } from '../../components/ui/KpiCard';
 import { Table } from '../../components/ui/Table';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Pagination } from '../../components/ui/Pagination';
@@ -47,6 +48,22 @@ export function InvestmentsPage() {
   }
 
   useEffect(() => { reload(); }, []);
+
+  // Resumo da carteira ativa (WORK-33). Variacao do dia ponderada pelo valor de mercado.
+  const summary = useMemo(() => {
+    const priced = allItems
+      .filter((i) => i.active)
+      .map((i) => portfolioMap[i.ticker])
+      .filter((p): p is InvestmentPortfolioItem => !!p && !p.priceUnavailable && p.marketValue != null);
+    const total = priced.reduce((sum, p) => sum + (p.marketValue ?? 0), 0);
+    const withChange = priced.filter((p) => p.changePercent != null);
+    const weightBase = withChange.reduce((sum, p) => sum + (p.marketValue ?? 0), 0);
+    const dayChange =
+      weightBase > 0
+        ? withChange.reduce((sum, p) => sum + (p.marketValue ?? 0) * (p.changePercent ?? 0), 0) / weightBase
+        : null;
+    return { total, dayChange, count: allItems.filter((i) => i.active).length };
+  }, [allItems, portfolioMap]);
 
   const filtered = useMemo(() => {
     const lower = q.trim().toLowerCase();
@@ -94,6 +111,9 @@ export function InvestmentsPage() {
     <div>
       <PageHeader
         title="Investimentos"
+        subtitle="Carteira com cotações de mercado"
+        icon={TrendingUp}
+        tone="blue"
         actions={
           <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
             <Plus className="h-4 w-4" />
@@ -101,6 +121,31 @@ export function InvestmentsPage() {
           </Button>
         }
       />
+
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <KpiCard
+          title="Valor de mercado"
+          value={formatCurrency(summary.total)}
+          icon={<Wallet className="h-5 w-5" />}
+          accent="indigo"
+          subtitle={loading ? 'Carregando...' : 'Soma da carteira ativa'}
+        />
+        <KpiCard
+          title="Variação do dia"
+          value={summary.dayChange === null ? '—' : `${summary.dayChange >= 0 ? '+' : ''}${summary.dayChange.toFixed(2)}%`}
+          icon={<Activity className="h-5 w-5" />}
+          variant={summary.dayChange === null ? 'neutral' : summary.dayChange >= 0 ? 'positive' : 'negative'}
+          accent={summary.dayChange !== null && summary.dayChange < 0 ? 'red' : 'emerald'}
+          subtitle="Média ponderada pelo valor de cada ativo"
+        />
+        <KpiCard
+          title="Ativos"
+          value={String(summary.count)}
+          icon={<Layers className="h-5 w-5" />}
+          accent="slate"
+          subtitle={summary.count === 1 ? 'ativo na carteira' : 'ativos na carteira'}
+        />
+      </div>
 
       <div className="mb-4 flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
@@ -132,7 +177,7 @@ export function InvestmentsPage() {
           {
             header: 'Ticker',
             render: (r) => (
-              <span className={`font-medium tabular-nums${r.active ? '' : ' text-slate-400 line-through'}`}>
+              <span className={`font-semibold tabular-nums ${r.active ? 'text-slate-900' : 'text-slate-400 line-through'}`}>
                 {r.ticker}
                 {!r.active && <span className="ml-2 text-xs font-normal text-red-400">(inativo)</span>}
               </span>

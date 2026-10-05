@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type SectionTone = 'indigo' | 'blue' | 'amber' | 'emerald' | 'red';
+export type SectionTone = 'indigo' | 'blue' | 'amber' | 'emerald' | 'red' | 'teal';
 
 // Classes completas (sem interpolacao) para o Tailwind gerar todas.
 const TONE_CLASSES: Record<SectionTone, string> = {
@@ -9,6 +9,7 @@ const TONE_CLASSES: Record<SectionTone, string> = {
   amber: 'bg-amber-100 text-amber-600',
   emerald: 'bg-emerald-100 text-emerald-600',
   red: 'bg-red-100 text-red-600',
+  teal: 'bg-teal-100 text-teal-600',
 };
 
 type Props = {

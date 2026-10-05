@@ -103,7 +103,8 @@ export function Sidebar() {
                   to={item.route ?? '#'}
                   className={({ isActive }) =>
                     [
-                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                      // outline-none: o Safari deixava o contorno de foco do clique preso no item ativo.
+                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent/40',
                       isActive
                         ? 'bg-accent-soft text-accent font-medium'
                         : 'text-slate-600 hover:bg-bg-elevated hover:text-slate-900',

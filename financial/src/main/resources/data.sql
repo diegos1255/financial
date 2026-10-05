@@ -18,12 +18,12 @@ SELECT gen_random_uuid(), 'Categorias', '/categories', 'tag', 2, true, now(), no
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE label = 'Categorias');
 
 INSERT INTO menus (id, label, route, icon, sort_order, active, created_date, updated_date)
-SELECT gen_random_uuid(), 'Contas Bancarias', '/bank-accounts', 'credit-card', 3, true, now(), now()
-WHERE NOT EXISTS (SELECT 1 FROM menus WHERE label = 'Contas Bancarias');
+SELECT gen_random_uuid(), 'Contas Bancárias', '/bank-accounts', 'credit-card', 3, true, now(), now()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE route = '/bank-accounts');
 
 INSERT INTO menus (id, label, route, icon, sort_order, active, created_date, updated_date)
-SELECT gen_random_uuid(), 'Salarios', '/salaries', 'dollar-sign', 4, true, now(), now()
-WHERE NOT EXISTS (SELECT 1 FROM menus WHERE label = 'Salarios');
+SELECT gen_random_uuid(), 'Salários', '/salaries', 'dollar-sign', 4, true, now(), now()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE route = '/salaries');
 
 INSERT INTO menus (id, label, route, icon, sort_order, active, created_date, updated_date)
 SELECT gen_random_uuid(), 'Despesas', '/expenses', 'shopping-cart', 5, true, now(), now()
@@ -47,3 +47,7 @@ WHERE NOT EXISTS (SELECT 1 FROM menus WHERE label = 'Email');
 
 -- Email desceu uma posicao com a entrada da Rescisao (WORK-31).
 UPDATE menus SET sort_order = 9 WHERE label = 'Email' AND sort_order = 8;
+
+-- Acentos nos labels antigos (WORK-33). Os inserts acima checam por rota para nao duplicar.
+UPDATE menus SET label = 'Contas Bancárias' WHERE route = '/bank-accounts' AND label = 'Contas Bancarias';
+UPDATE menus SET label = 'Salários' WHERE route = '/salaries' AND label = 'Salarios';

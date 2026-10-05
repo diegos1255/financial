@@ -1,24 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
+import { Pencil, Plus, RotateCcw, Search, Tag, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
-import { Table } from '../../components/ui/Table';
+import { EntityCard } from '../../components/ui/EntityCard';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
-import { Pagination } from '../../components/ui/Pagination';
 import { CategoryFormModal } from './CategoryFormModal';
 import { categoryService } from '../../services/categoryService';
 import { extractApiError } from '../../utils/apiError';
 import type { Category } from '../../types/category';
-
-const PAGE_SIZE = 10;
 
 export function CategoriesPage() {
   const [allItems, setAllItems] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [includeInactive, setIncludeInactive] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [removing, setRemoving] = useState<Category | null>(null);
@@ -47,10 +43,6 @@ export function CategoriesPage() {
     });
   }, [allItems, q, includeInactive]);
 
-  useEffect(() => { setCurrentPage(0); }, [q, includeInactive]);
-
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageItems = filtered.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
 
   async function handleConfirmRemove() {
     if (!removing) return;
@@ -82,6 +74,8 @@ export function CategoriesPage() {
       <PageHeader
         title="Categorias"
         subtitle="Tipos de despesas"
+        icon={Tag}
+        tone="indigo"
         actions={
           <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
             <Plus className="h-4 w-4" />
@@ -112,31 +106,28 @@ export function CategoriesPage() {
         </label>
       </div>
 
-      <Table<Category>
-        rowKey={(r) => r.id}
-        loading={loading}
-        empty="Nenhuma categoria encontrada."
-        columns={[
-          {
-            header: 'Nome',
-            render: (r) => (
-              <div className="flex items-center gap-2">
-                {r.color && (
-                  <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
-                )}
-                <span className={r.active ? '' : 'text-slate-400 line-through'}>{r.name}</span>
-                {!r.active && <span className="text-xs text-red-400">(inativo)</span>}
-              </div>
-            ),
-          },
-          { header: 'Descrição', render: (r) => r.description ?? '—' },
-          {
-            header: 'Ações',
-            align: 'right',
-            width: '120px',
-            render: (r) => (
-              <div className="flex justify-end gap-1">
-                {r.active ? (
+      {loading ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-[72px] animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <p className="rounded-2xl border border-slate-200 bg-white py-10 text-center text-sm text-slate-500 shadow-soft">
+          Nenhuma categoria encontrada.
+        </p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map((r) => (
+            <EntityCard
+              key={r.id}
+              title={r.name}
+              // Muitas descricoes repetem o nome: so mostra quando acrescenta algo.
+              description={r.description && r.description.trim().toLowerCase() !== r.name.trim().toLowerCase() ? r.description : null}
+              color={r.color}
+              inactive={!r.active}
+              actions={
+                r.active ? (
                   <>
                     <button
                       className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-accent transition-colors"
@@ -161,21 +152,12 @@ export function CategoriesPage() {
                   >
                     <RotateCcw className="h-4 w-4" />
                   </button>
-                )}
-              </div>
-            ),
-          },
-        ]}
-        data={pageItems}
-      />
-
-      <Pagination
-        page={currentPage}
-        totalPages={totalPages}
-        totalElements={filtered.length}
-        size={PAGE_SIZE}
-        onPageChange={setCurrentPage}
-      />
+                )
+              }
+            />
+          ))}
+        </div>
+      )}
 
       <CategoryFormModal
         open={formOpen}

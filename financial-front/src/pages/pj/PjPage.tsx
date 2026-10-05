@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Download, FileText, Pencil, Plus, Receipt, Trash2 } from 'lucide-react';
+import { Briefcase, Download, FileText, Pencil, PiggyBank, Plus, Receipt, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
+import { KpiCard } from '../../components/ui/KpiCard';
 import { Table } from '../../components/ui/Table';
 import { Select } from '../../components/ui/Select';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
@@ -83,6 +84,8 @@ export function PjPage() {
       <PageHeader
         title="PJ"
         subtitle="Notas fiscais e encargos fiscais mensais"
+        icon={Briefcase}
+        tone="violet"
         actions={
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4" />
@@ -112,27 +115,37 @@ export function PjPage() {
             ))}
           </Select>
         </div>
-        {showSummary && (
-          <>
-            <div className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
-              <FileText className="h-4 w-4 text-emerald-500" />
-              <span className="text-emerald-700">NF do mês:</span>
-              <span className="font-semibold text-emerald-800 tabular-nums">
-                {formatCurrency(nfAmount)}
-              </span>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
-              <Receipt className="h-4 w-4 text-emerald-500" />
-              <span className="text-emerald-700">Impostos do mês:</span>
-              <span className="font-semibold text-emerald-800 tabular-nums">
-                {formatCurrency(taxesTotal)}
-              </span>
-            </div>
-          </>
-        )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-soft overflow-hidden">
+      {showSummary && (
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <KpiCard
+            title="NF do mês"
+            value={formatCurrency(nfAmount)}
+            icon={<FileText className="h-5 w-5" />}
+            accent="emerald"
+            subtitle="Valor da nota fiscal emitida"
+          />
+          <KpiCard
+            title="Impostos do mês"
+            value={formatCurrency(taxesTotal)}
+            icon={<Receipt className="h-5 w-5" />}
+            variant={taxesTotal > 0 ? 'negative' : 'neutral'}
+            accent="amber"
+            subtitle="DAS + INSS + Contabilidade"
+          />
+          <KpiCard
+            title="Líquido"
+            value={formatCurrency(nfAmount - taxesTotal)}
+            icon={<PiggyBank className="h-5 w-5" />}
+            variant={nfAmount - taxesTotal < 0 ? 'negative' : 'positive'}
+            accent={nfAmount - taxesTotal < 0 ? 'red' : 'indigo'}
+            subtitle="O que sobra da nota depois dos impostos"
+          />
+        </div>
+      )}
+
+      <div>
         <Table<PjEntry>
           rowKey={(r) => r.id}
           loading={loading}
@@ -145,11 +158,16 @@ export function PjPage() {
                 <span className="font-medium text-slate-800">{PJ_TYPE_LABELS[r.type]}</span>
               ),
             },
-            {
-              header: 'Competência',
-              align: 'center',
-              render: (r) => `${String(r.month).padStart(2, '0')}/${r.year}`,
-            },
+            // Com um mes especifico no filtro a competencia so repetiria o filtro.
+            ...(showSummary
+              ? []
+              : [
+                  {
+                    header: 'Competência',
+                    align: 'center' as const,
+                    render: (r: PjEntry) => `${String(r.month).padStart(2, '0')}/${r.year}`,
+                  },
+                ]),
             {
               header: 'Valor',
               align: 'right',

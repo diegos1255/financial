@@ -19,7 +19,7 @@ export function SeveranceCard({ severance, mask }: Props) {
 
   return (
     <div className={SECTION_CARD_CLASSES}>
-      <SectionTitle icon={<Handshake className="h-4 w-4" />} title="Rescisão" tone="amber" />
+      <SectionTitle icon={<Handshake className="h-4 w-4" />} title="Rescisão" tone="teal" />
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <div>
           <div className="text-xs text-slate-500">Total a receber</div>

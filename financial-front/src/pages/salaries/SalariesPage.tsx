@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { DollarSign, Pencil, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -72,6 +72,8 @@ export function SalariesPage() {
       <PageHeader
         title="Salários"
         subtitle="Recebimentos por competência"
+        icon={DollarSign}
+        tone="emerald"
         actions={
           <Button
             onClick={() => {

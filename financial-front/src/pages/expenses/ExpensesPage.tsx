@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Ban, ChevronDown, ChevronUp, Pencil, Plus, Search, SlidersHorizontal, Wallet, X } from 'lucide-react';
+import { Ban, ChevronDown, ChevronUp, Pencil, Plus, Search, ShoppingCart, SlidersHorizontal, Wallet, X } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { Table } from '../../components/ui/Table';
@@ -8,6 +8,7 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Pagination } from '../../components/ui/Pagination';
 import { Select } from '../../components/ui/Select';
 import { InstallmentsList } from '../../components/expenses/InstallmentsList';
+import { ExpenseTypeBadge } from '../../components/expenses/ExpenseTypeBadge';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { ExpenseUpdateModal } from './ExpenseUpdateModal';
 import {
@@ -52,6 +53,7 @@ export function ExpensesPage() {
   const [filters, setFilters] = useState<ExpenseFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const categoryColors = useMemo(() => new Map(categories.map((c) => [c.id, c.color])), [categories]);
   const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
@@ -171,6 +173,8 @@ export function ExpensesPage() {
       <PageHeader
         title="Despesas"
         subtitle="Fixas, parceladas e variáveis"
+        icon={ShoppingCart}
+        tone="red"
         actions={
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4" />
@@ -208,10 +212,10 @@ export function ExpensesPage() {
           </Select>
         </div>
         {showMonthTotal && (
-          <div className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
-            <Wallet className="h-4 w-4 text-emerald-500" />
-            <span className="text-emerald-700">Total do mês:</span>
-            <span className="font-semibold text-emerald-800 tabular-nums">
+          <div className="inline-flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm">
+            <Wallet className="h-4 w-4 text-red-500" />
+            <span className="text-red-700">Total do mês:</span>
+            <span className="font-semibold text-red-800 tabular-nums">
               {formatCurrency(monthTotal!)}
             </span>
           </div>
@@ -231,11 +235,11 @@ export function ExpensesPage() {
         )}
 
         <div className="inline-flex items-center gap-2">
-          <Button onClick={() => setFiltersOpen(true)}>
+          <Button variant="outline" onClick={() => setFiltersOpen(true)}>
             <SlidersHorizontal className="h-4 w-4" />
             Filtros
             {activeFilters > 0 && (
-              <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white/25 px-1.5 text-[11px] font-semibold text-white">
+              <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-semibold text-white">
                 {activeFilters}
               </span>
             )}
@@ -279,7 +283,7 @@ export function ExpensesPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-soft overflow-hidden">
+      <div>
         <Table<Expense>
           rowKey={(r) => r.id}
           loading={loading}
@@ -301,24 +305,21 @@ export function ExpensesPage() {
             {
               header: 'Tipo',
               align: 'center',
-              render: (r) =>
-                r.expenseType === 'FIXED' ? (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">Fixa</span>
-                ) : r.expenseType === 'INSTALLMENT' ? (
-                  <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
-                    {r.installmentsCount}×
-                  </span>
-                ) : (
-                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">Variável</span>
-                ),
+              render: (r) => (
+                <ExpenseTypeBadge
+                  type={r.expenseType}
+                  label={r.expenseType === 'INSTALLMENT' ? `Parcela ${r.installmentsCount}×` : undefined}
+                />
+              ),
             },
             {
               header: 'Parcelas',
               align: 'center',
               render: (r) => {
-                if (r.expenseType !== 'INSTALLMENT') return null;
+                const empty = <span className="text-slate-300">—</span>;
+                if (r.expenseType !== 'INSTALLMENT') return empty;
                 const progress = installmentProgress(r.installments);
-                if (!progress) return null;
+                if (!progress) return empty;
                 const allPaid = progress.paid === progress.total;
                 return (
                   <span className={`text-xs font-medium ${allPaid ? 'text-emerald-600' : 'text-slate-500'}`}>
@@ -327,7 +328,19 @@ export function ExpensesPage() {
                 );
               },
             },
-            { header: 'Categoria', align: 'left', render: (r) => r.category.name },
+            {
+              header: 'Categoria',
+              align: 'left',
+              render: (r) => (
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: categoryColors.get(r.category.id) ?? '#cbd5e1' }}
+                  />
+                  {r.category.name}
+                </span>
+              ),
+            },
             { header: 'Conta', align: 'left', render: (r) => r.bankAccount.name },
             { header: 'Compra', align: 'center', render: (r) => formatDate(r.purchaseDate) },
             { header: 'Total', align: 'right', render: (r) => formatCurrency(r.totalAmount) },

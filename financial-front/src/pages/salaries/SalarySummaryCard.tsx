@@ -12,7 +12,7 @@ type Props = {
 
 export function SalarySummaryCard({ data, loading, onEditTotal }: Props) {
   if (loading || !data) {
-    return <div className="mb-4 h-32 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />;
+    return <div className="mb-4 h-32 animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />;
   }
 
   const expected = data.expectedAmount;
@@ -23,7 +23,8 @@ export function SalarySummaryCard({ data, loading, onEditTotal }: Props) {
   const tone = salaryTone(received);
 
   return (
-    <div className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-soft">
+    <div className="relative mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-50 via-white via-45% to-white p-5 pl-6 shadow-soft">
+      <span className="absolute inset-y-0 left-0 w-1 bg-emerald-500" aria-hidden />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Total a receber</div>
