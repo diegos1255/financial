@@ -27,7 +27,8 @@ export function SignupPage() {
 
     try {
       await signup({ name: name.trim(), login: loginValue.trim(), password }, photo);
-      navigate('/dashboard', { replace: true });
+      // welcome: o dashboard mostra a transicao de entrada (WORK-34).
+      navigate('/dashboard', { replace: true, state: { welcome: 'signup' } });
     } catch (err) {
       const apiError = (err as { response?: { data?: ApiError } }).response?.data;
       if (apiError?.fieldErrors?.length) {

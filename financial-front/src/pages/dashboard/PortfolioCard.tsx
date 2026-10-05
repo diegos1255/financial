@@ -1,6 +1,7 @@
 import { TrendingUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import type { InvestmentPortfolioResponse } from '../../types/investment';
+import { AnimatedCurrency } from '../../components/ui/AnimatedCurrency';
 import { SectionTitle } from '../../components/ui/SectionTitle';
 import { SECTION_CARD_CLASSES } from '../../components/ui/sectionCard';
 
@@ -21,7 +22,7 @@ export function PortfolioCard({ portfolio }: Props) {
         tone="blue"
         right={
           <span className="text-lg font-semibold text-slate-900 tabular-nums">
-            {formatCurrency(portfolio.totalMarketValue)}
+            <AnimatedCurrency value={portfolio.totalMarketValue} />
           </span>
         }
       />

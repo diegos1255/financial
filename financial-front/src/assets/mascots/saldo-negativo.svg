@@ -1,5 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="40 74 160 180" width="160" height="180">
   <title>Saldo negativo</title>
+  <style>
+    .sob { animation: sob 2.4s ease-in-out infinite; transform-box: view-box; transform-origin: 120px 244px; }
+    @keyframes sob { 0%, 70%, 100% { transform: scale(1, 1); } 78% { transform: scale(1.02, 0.97); } 86% { transform: scale(1, 1); } }
+    .drop { animation: drip 1.8s ease-in infinite; }
+    .drop.d2 { animation-delay: 0.9s; }
+    @keyframes drip {
+      0% { transform: translateY(0); opacity: 0; }
+      15% { opacity: 1; }
+      100% { transform: translateY(26px); opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { .sob, .drop { animation: none; opacity: 0; } }
+  </style>
+  <g class="sob">
   <g fill="none" stroke="#111" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
     <!-- corpo sentado -->
     <path d="M72 238 C64 190 62 140 76 112 C90 84 146 82 162 112 C176 140 174 190 168 238 Z" fill="#fff"/>
@@ -23,5 +36,9 @@
   <g stroke="#60a5fa" stroke-width="6" stroke-linecap="round">
     <line x1="102" y1="138" x2="102" y2="168"/>
     <line x1="138" y1="138" x2="138" y2="168"/>
+  </g>
+    <!-- gotas caindo -->
+    <circle class="drop" cx="102" cy="170" r="4" fill="#60a5fa"/>
+    <circle class="drop d2" cx="138" cy="170" r="4" fill="#60a5fa"/>
   </g>
 </svg>

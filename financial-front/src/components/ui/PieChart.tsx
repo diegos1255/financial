@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
+import { AnimatedCurrency } from './AnimatedCurrency';
 import { Cell, Pie, PieChart as RePieChart, ResponsiveContainer } from 'recharts';
 import type { PieSectorDataItem } from 'recharts';
 import { formatCurrency } from '../../utils/currency';
@@ -57,18 +59,6 @@ function hoveredFrom(sector: PieSectorDataItem, color: string): HoveredSlice {
   };
 }
 
-function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReduced(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-  return reduced;
-}
 
 export function PieChart({
   data,
@@ -147,7 +137,7 @@ export function PieChart({
               {centerLabel}
             </span>
             <span className="mt-1 text-lg font-semibold text-slate-900">
-              {centerValueOverride ?? formatCurrency(centerTotal)}
+              {centerValueOverride ?? <AnimatedCurrency value={centerTotal} />}
             </span>
           </div>
         )}

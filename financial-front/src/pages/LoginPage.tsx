@@ -30,7 +30,8 @@ export function LoginPage() {
     try {
       await login({ login: loginValue.trim(), password });
       // localStorage.setItem('remember_me', String(rememberMe));
-      navigate('/dashboard', { replace: true });
+      // welcome: o dashboard mostra a transicao de entrada (WORK-34).
+      navigate('/dashboard', { replace: true, state: { welcome: 'login' } });
     } catch (err) {
       const apiError = (err as { response?: { data?: ApiError } }).response?.data;
       setErrorMessage(apiError?.message ?? 'Não foi possível fazer login');

@@ -1,5 +1,6 @@
 import { Handshake } from 'lucide-react';
-import { formatCurrency } from '../../utils/currency';
+import { AnimatedCurrency } from '../../components/ui/AnimatedCurrency';
+import { FillBar } from '../../components/ui/FillBar';
 import { severanceTone } from '../severance/severanceTone';
 import type { Severance } from '../../types/severance';
 import { SectionTitle } from '../../components/ui/SectionTitle';
@@ -23,23 +24,15 @@ export function SeveranceCard({ severance, mask }: Props) {
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <div>
           <div className="text-xs text-slate-500">Total a receber</div>
-          <div className="text-lg font-semibold tabular-nums text-slate-900">{mask(formatCurrency(total))}</div>
+          <div className="text-lg font-semibold tabular-nums text-slate-900"><AnimatedCurrency value={total} mask={mask} /></div>
         </div>
         <div className="text-right">
           <div className="text-xs text-slate-500">Recebido</div>
-          <div className={`text-lg font-semibold tabular-nums ${tone.text}`}>{mask(formatCurrency(received))}</div>
+          <div className={`text-lg font-semibold tabular-nums ${tone.text}`}><AnimatedCurrency value={received} mask={mask} /></div>
         </div>
       </div>
       <div className="mt-3 flex items-center gap-3">
-        <div
-          className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"
-          role="progressbar"
-          aria-valuenow={percent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div className={`h-full rounded-full transition-all ${tone.bar}`} style={{ width: `${percent}%` }} />
-        </div>
+        <FillBar percent={percent} barClass={tone.bar} />
         <span className="text-sm tabular-nums text-slate-600">{percent}%</span>
       </div>
     </div>
