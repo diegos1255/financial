@@ -138,7 +138,8 @@ class SalaryServiceTest {
         when(repository.findByUserIdAndReferenceYearAndReferenceMonth(USER_ID, 2026, 10)).thenReturn(Optional.of(salary));
         when(paymentRepository.findBySalaryIdOrderByPaymentDateAscCreatedDateAsc(salary.getId()))
                 .thenReturn(List.of(storedPayment(salary, "8000.00"), storedPayment(salary, "7000.00")));
-        when(pjEntryRepository.existsByUserIdAndYearAndMonthAndType(USER_ID, 2026, 10, PjEntryType.INVOICE))
+        // Salario de outubro vem da NF de setembro (mes trabalhado).
+        when(pjEntryRepository.existsByUserIdAndYearAndMonthAndType(USER_ID, 2026, 9, PjEntryType.INVOICE))
                 .thenReturn(true);
 
         SalaryMonthResponse month = service.getMonth(2026, 10);
@@ -177,14 +178,29 @@ class SalaryServiceTest {
     }
 
     @Test
-    void syncFromInvoice_createsOrUpdatesExpected() {
+    void syncFromInvoice_fillsTheFollowingMonth() {
         when(repository.findByUserIdAndReferenceYearAndReferenceMonth(USER_ID, 2026, 10)).thenReturn(Optional.empty());
 
-        service.syncExpectedFromInvoice(USER_ID, 2026, 10, new BigDecimal("16000.00"));
+        // NF de setembro -> salario de outubro
+        service.syncExpectedFromInvoice(USER_ID, 2026, 9, new BigDecimal("16000.00"));
 
         ArgumentCaptor<Salary> saved = ArgumentCaptor.forClass(Salary.class);
         verify(repository, atLeastOnce()).save(saved.capture());
+        assertThat(saved.getValue().getReferenceYear()).isEqualTo(2026);
+        assertThat(saved.getValue().getReferenceMonth()).isEqualTo(10);
         assertThat(saved.getValue().getExpectedAmount()).isEqualByComparingTo("16000.00");
+    }
+
+    @Test
+    void syncFromInvoice_decemberFillsJanuaryOfNextYear() {
+        when(repository.findByUserIdAndReferenceYearAndReferenceMonth(USER_ID, 2027, 1)).thenReturn(Optional.empty());
+
+        service.syncExpectedFromInvoice(USER_ID, 2026, 12, new BigDecimal("16000.00"));
+
+        ArgumentCaptor<Salary> saved = ArgumentCaptor.forClass(Salary.class);
+        verify(repository, atLeastOnce()).save(saved.capture());
+        assertThat(saved.getValue().getReferenceYear()).isEqualTo(2027);
+        assertThat(saved.getValue().getReferenceMonth()).isEqualTo(1);
     }
 
     @Test
@@ -193,7 +209,7 @@ class SalaryServiceTest {
         when(repository.findByUserIdAndReferenceYearAndReferenceMonth(USER_ID, 2026, 10)).thenReturn(Optional.of(salary));
         when(paymentRepository.existsBySalaryId(salary.getId())).thenReturn(false);
 
-        service.syncExpectedFromInvoice(USER_ID, 2026, 10, null);
+        service.syncExpectedFromInvoice(USER_ID, 2026, 9, null);
 
         verify(repository).delete(salary);
     }
@@ -204,7 +220,7 @@ class SalaryServiceTest {
         when(repository.findByUserIdAndReferenceYearAndReferenceMonth(USER_ID, 2026, 10)).thenReturn(Optional.of(salary));
         when(paymentRepository.existsBySalaryId(salary.getId())).thenReturn(true);
 
-        service.syncExpectedFromInvoice(USER_ID, 2026, 10, null);
+        service.syncExpectedFromInvoice(USER_ID, 2026, 9, null);
 
         verify(repository, never()).delete(any());
         assertThat(salary.getExpectedAmount()).isNull();
@@ -215,7 +231,7 @@ class SalaryServiceTest {
         when(repository.findByUserIdAndReferenceYearAndReferenceMonth(eq(USER_ID), anyInt(), anyInt()))
                 .thenReturn(Optional.empty());
 
-        service.syncExpectedFromInvoice(USER_ID, 2026, 10, null);
+        service.syncExpectedFromInvoice(USER_ID, 2026, 9, null);
 
         verify(repository, never()).save(any());
         verify(repository, never()).delete(any());

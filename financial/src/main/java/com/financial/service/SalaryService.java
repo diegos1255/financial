@@ -113,10 +113,16 @@ public class SalaryService {
     }
 
     /**
-     * Mantem o total previsto igual a NF (INVOICE) da competencia. Chamado pelo
-     * {@link PjEntryService}. {@code amount == null} significa que a NF foi excluida.
+     * Mantem o total previsto do salario igual a NF (INVOICE). Chamado pelo {@link PjEntryService}
+     * com a competencia DA NF; {@code amount == null} significa que a NF foi excluida.
+     * <p>
+     * A NF e do mes trabalhado e o dinheiro entra no mes seguinte (WORK-35, D-8): a NF de
+     * setembro preenche o salario de outubro — mesma logica dos impostos do dashboard.
      */
-    public void syncExpectedFromInvoice(UUID userId, int year, int month, BigDecimal amount) {
+    public void syncExpectedFromInvoice(UUID userId, int invoiceYear, int invoiceMonth, BigDecimal amount) {
+        YearMonth salaryMonth = YearMonth.of(invoiceYear, invoiceMonth).plusMonths(1);
+        int year = salaryMonth.getYear();
+        int month = salaryMonth.getMonthValue();
         if (amount != null) {
             Salary salary = findOrCreate(userId, year, month);
             salary.setExpectedAmount(amount);
@@ -153,8 +159,9 @@ public class SalaryService {
     }
 
     private SalaryMonthResponse toMonthResponse(UUID userId, int year, int month, Salary salary) {
+        YearMonth invoiceMonth = YearMonth.of(year, month).minusMonths(1);
         boolean fromInvoice = pjEntryRepository.existsByUserIdAndYearAndMonthAndType(
-                userId, year, month, PjEntryType.INVOICE);
+                userId, invoiceMonth.getYear(), invoiceMonth.getMonthValue(), PjEntryType.INVOICE);
         if (salary == null) {
             return new SalaryMonthResponse(null, year, month, null, fromInvoice,
                     BigDecimal.ZERO, null, null, List.of());

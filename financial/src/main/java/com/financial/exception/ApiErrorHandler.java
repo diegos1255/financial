@@ -21,12 +21,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
@@ -179,6 +181,23 @@ public class ApiErrorHandler {
                 .toList();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiError.withFields(400, "INVALID_PAYLOAD", "Payload inválido", fields));
+    }
+
+    // Corpo ausente ou JSON invalido: erro do cliente, nao 500.
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of(400, "INVALID_PAYLOAD", "Corpo da requisição ausente ou inválido"));
+    }
+
+    // Respeita o status de quem lancou (ex.: 503 do chat desligado) em vez de cair no 500 generico.
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleResponseStatus(ResponseStatusException e) {
+        int status = e.getStatusCode().value();
+        HttpStatus httpStatus = HttpStatus.resolve(status);
+        String code = httpStatus != null ? httpStatus.name() : "ERROR";
+        String message = e.getReason() != null ? e.getReason() : code;
+        return ResponseEntity.status(e.getStatusCode()).body(ApiError.of(status, code, message));
     }
 
     @ExceptionHandler(Exception.class)

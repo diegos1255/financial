@@ -10,11 +10,20 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "chat")
 public class ChatProperties {
 
+    /** Chave liga/desliga (FEATURES_CHAT_ENABLED) — WORK-35. */
+    private boolean featureEnabled = true;
     private Gemini gemini = new Gemini();
     private Rag rag = new Rag();
     private Query query = new Query();
 
     public boolean isEnabled() {
+        return featureEnabled && hasApiKey();
+    }
+
+    public boolean isFeatureEnabled() { return featureEnabled; }
+    public void setEnabled(boolean enabled) { this.featureEnabled = enabled; }
+
+    public boolean hasApiKey() {
         return gemini.apiKey != null && !gemini.apiKey.isBlank();
     }
 

@@ -24,6 +24,8 @@ public class ChatConfig {
         if (props.isEnabled()) {
             log.info("Chat/RAG habilitado: model={} embedding={}",
                     props.getGemini().getChatModel(), props.getGemini().getEmbeddingModel());
+        } else if (!props.isFeatureEnabled()) {
+            log.info("Chat/RAG desligado por FEATURES_CHAT_ENABLED=false. Endpoints /api/chat retornarao 503.");
         } else {
             log.warn("Chat/RAG desabilitado — GEMINI_API_KEY nao configurada. Endpoints /api/chat retornarao 503.");
         }

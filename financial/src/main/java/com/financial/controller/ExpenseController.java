@@ -1,6 +1,7 @@
 package com.financial.controller;
 
 import com.financial.auth.CurrentUser;
+import com.financial.dto.ExpenseCancelRequest;
 import com.financial.dto.ExpenseRequest;
 import com.financial.dto.ExpenseResponse;
 import com.financial.dto.ExpenseUpdateRequest;
@@ -74,8 +75,9 @@ public class ExpenseController {
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<Void> cancel(@PathVariable UUID id) {
-        service.cancel(id);
+    public ResponseEntity<Void> cancel(@PathVariable UUID id,
+                                       @Valid @RequestBody ExpenseCancelRequest request) {
+        service.cancel(id, request.reason());
         return ResponseEntity.noContent().build();
     }
 

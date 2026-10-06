@@ -151,7 +151,7 @@ public class ExpenseService {
         return get(id);
     }
 
-    public void cancel(UUID id) {
+    public void cancel(UUID id, String reason) {
         Expense expense = repository.findByIdAndUserId(id, CurrentUser.id())
                 .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada"));
         if (expense.getStatus() == ExpenseStatus.CANCELLED) {
@@ -159,6 +159,7 @@ public class ExpenseService {
         }
         expense.setStatus(ExpenseStatus.CANCELLED);
         expense.setCancelledAt(OffsetDateTime.now());
+        expense.setCancellationReason(reason.trim());
         repository.save(expense);
         installmentService.cancelPendingFor(expense);
     }

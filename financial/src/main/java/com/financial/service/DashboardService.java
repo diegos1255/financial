@@ -8,7 +8,9 @@ import com.financial.dto.MonthEvolutionResponse;
 import com.financial.dto.MonthExpenseItemResponse;
 import com.financial.model.Expense;
 import com.financial.model.Installment;
+import com.financial.model.PjEntry;
 import com.financial.model.enums.InstallmentStatus;
+import com.financial.model.enums.PjEntryType;
 import com.financial.repository.DashboardRepository;
 import jakarta.persistence.Tuple;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,12 @@ import java.util.stream.Stream;
 @Transactional(readOnly = true)
 public class DashboardService {
 
+    private static final String TAX_COLOR = "#f59e0b"; // amber-500, mesma cor do card Impostos PJ
+    private static final Map<PjEntryType, String> TAX_LABELS = Map.of(
+            PjEntryType.DAS, "DAS", PjEntryType.INSS, "INSS", PjEntryType.ACCOUNTING, "Contabilidade");
+    private static final String[] MONTH_NAMES = {"janeiro", "fevereiro", "março", "abril", "maio", "junho",
+            "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"};
+
     private final DashboardRepository repository;
 
     public DashboardService(DashboardRepository repository) {
@@ -47,7 +55,7 @@ public class DashboardService {
                 .mapToObj(i -> last.minusMonths(months - 1L - i))
                 .map(ym -> {
                     BalanceResponse b = computeBalance(userId, ym);
-                    return new MonthEvolutionResponse(b.year(), b.month(), b.salary(), b.totalExpenses(), b.balance());
+                    return new MonthEvolutionResponse(b.year(), b.month(), b.salary(), b.totalExpenses(), b.pjTaxes(), b.balance());
                 })
                 .toList();
     }
@@ -67,14 +75,27 @@ public class DashboardService {
         Stream<MonthExpenseItemResponse> variable = repository.listVariableExpenses(userId, startOfMonth, endOfMonth).stream()
                 .map(e -> item(e, e.getPurchaseDate(), e.getTotalAmount(), null));
 
-        return Stream.of(fixed, installments, variable)
+        YearMonth taxMonth = ym.minusMonths(1);
+        String taxRef = " — ref. " + MONTH_NAMES[taxMonth.getMonthValue() - 1];
+        Stream<MonthExpenseItemResponse> taxes = repository
+                .listPjTaxes(userId, taxMonth.getYear(), taxMonth.getMonthValue()).stream()
+                .map(p -> new MonthExpenseItemResponse("PJ_TAX", p.getId(), TAX_LABELS.get(p.getType()) + taxRef,
+                        "Impostos PJ", TAX_COLOR, null, null, p.getAmount(), null));
+
+        return Stream.of(fixed, installments, variable, taxes)
                 .flatMap(s -> s)
                 .sorted(Comparator.comparing(MonthExpenseItemResponse::amount).reversed())
                 .toList();
     }
 
+    private BigDecimal sumPjTaxes(UUID userId, YearMonth taxMonth) {
+        return repository.listPjTaxes(userId, taxMonth.getYear(), taxMonth.getMonthValue()).stream()
+                .map(PjEntry::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     private static MonthExpenseItemResponse item(Expense e, LocalDate date, BigDecimal amount, String installmentLabel) {
-        return new MonthExpenseItemResponse(e.getId(), e.getDescription(), e.getCategory().getName(),
+        return new MonthExpenseItemResponse("EXPENSE", e.getId(), e.getDescription(), e.getCategory().getName(),
                 e.getCategory().getColor(), e.getExpenseType(), date, amount, installmentLabel);
     }
 
@@ -96,13 +117,16 @@ public class DashboardService {
         BigDecimal installmentsPending = repository.sumInstallmentsPending(userId, startOfMonth, endOfMonth);
         BigDecimal variable = repository.sumVariableExpenses(userId, startOfMonth, endOfMonth);
         BigDecimal totalExpenses = fixed.add(installments).add(variable);
-        BigDecimal balance = salary.subtract(totalExpenses);
+        // Salario vem do bruto da NF: os impostos dessa NF (mes anterior) saem do saldo (WORK-35, D-9).
+        BigDecimal pjTaxes = sumPjTaxes(userId, ym.minusMonths(1));
+        BigDecimal balance = salary.subtract(totalExpenses).subtract(pjTaxes);
 
         return new BalanceResponse(
                 ym.getYear(),
                 ym.getMonthValue(),
                 salary,
                 totalExpenses,
+                pjTaxes,
                 balance,
                 new BalanceBreakdown(fixed, installments, installmentsPaid, installmentsPending, variable)
         );

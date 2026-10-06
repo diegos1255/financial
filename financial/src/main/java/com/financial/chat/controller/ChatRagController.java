@@ -25,7 +25,7 @@ public class ChatRagController {
     public ReindexResult reindex() {
         if (!props.isEnabled()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Chat desabilitado — configure GEMINI_API_KEY");
+                    "Chat desabilitado");
         }
         try {
             return ingestionService.reindex();
