@@ -4,7 +4,7 @@ import { FillBar } from '../../components/ui/FillBar';
 import { AnimatedCurrency } from '../../components/ui/AnimatedCurrency';
 import { formatCurrency } from '../../utils/currency';
 import type { Severance } from '../../types/severance';
-import { severanceTone } from './severanceTone';
+import { progressTone } from '../../utils/progressTone';
 
 type Props = {
   data: Severance | null;
@@ -22,7 +22,7 @@ export function SeveranceSummaryCard({ data, loading, onEditTotal }: Props) {
   const remaining = data.remainingAmount;
   const overpaid = remaining !== null && remaining < 0;
   const percent = total ? Math.min(100, Math.round((received / total) * 100)) : 0;
-  const tone = severanceTone(received);
+  const tone = progressTone(received, total);
   const countLabel = data.paymentsCount === 1 ? '1 recebimento' : `${data.paymentsCount} recebimentos`;
 
   return (

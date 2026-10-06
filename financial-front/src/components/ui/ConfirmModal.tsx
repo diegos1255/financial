@@ -12,6 +12,8 @@ type ConfirmModalProps = {
   cancelLabel?: string;
   variant?: 'danger' | 'primary';
   loading?: boolean;
+  /** Desabilita o botao de confirmar (ex.: campo obrigatorio vazio). */
+  confirmDisabled?: boolean;
 };
 
 export function ConfirmModal({
@@ -24,6 +26,7 @@ export function ConfirmModal({
   cancelLabel = 'Cancelar',
   variant = 'danger',
   loading,
+  confirmDisabled,
 }: ConfirmModalProps) {
   return (
     <Modal
@@ -36,7 +39,7 @@ export function ConfirmModal({
           <Button variant="ghost" onClick={onClose} disabled={loading}>
             {cancelLabel}
           </Button>
-          <Button variant={variant} onClick={() => onConfirm()} disabled={loading}>
+          <Button variant={variant} onClick={() => onConfirm()} disabled={loading || confirmDisabled}>
             {loading ? 'Aguarde...' : confirmLabel}
           </Button>
         </>

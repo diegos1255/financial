@@ -10,7 +10,7 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { PjEntryFormModal } from './PjEntryFormModal';
 import { pjService } from '../../services/pjService';
 import { formatCurrency } from '../../utils/currency';
-import { MONTHS, yearRange } from '../../utils/months';
+import { MONTHS, shiftedMonthLabel, yearRange } from '../../utils/months';
 import { extractApiError } from '../../utils/apiError';
 import { PJ_TYPE_LABELS } from '../../types/pj';
 import type { PjEntry } from '../../types/pj';
@@ -124,7 +124,7 @@ export function PjPage() {
             value={formatCurrency(nfAmount)}
             icon={<FileText className="h-5 w-5" />}
             accent="emerald"
-            subtitle="Valor da nota fiscal emitida"
+            subtitle={`Preenche o salário de ${shiftedMonthLabel(Number(month), 1).toLowerCase()}`}
           />
           <KpiCard
             title="Impostos do mês"

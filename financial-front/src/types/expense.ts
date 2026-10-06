@@ -23,6 +23,7 @@ export type Expense = {
   firstDueDate: string | null;
   installmentsCount: number | null;
   cancelledAt: string | null;
+  cancellationReason: string | null;
   category: Ref;
   bankAccount: Ref;
   installments: Installment[] | null;

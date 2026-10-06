@@ -1,7 +1,7 @@
 import { Handshake } from 'lucide-react';
 import { AnimatedCurrency } from '../../components/ui/AnimatedCurrency';
 import { FillBar } from '../../components/ui/FillBar';
-import { severanceTone } from '../severance/severanceTone';
+import { progressTone } from '../../utils/progressTone';
 import type { Severance } from '../../types/severance';
 import { SectionTitle } from '../../components/ui/SectionTitle';
 import { SECTION_CARD_CLASSES } from '../../components/ui/sectionCard';
@@ -16,7 +16,7 @@ export function SeveranceCard({ severance, mask }: Props) {
   const total = severance.totalAmount ?? 0;
   const received = severance.receivedAmount;
   const percent = total ? Math.min(100, Math.round((received / total) * 100)) : 0;
-  const tone = severanceTone(received);
+  const tone = progressTone(received, total);
 
   return (
     <div className={SECTION_CARD_CLASSES}>

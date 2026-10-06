@@ -38,6 +38,8 @@ export function EvolutionChart({ data, selectedYear, selectedMonth, visible, mas
 
   const rows = data.map((d) => ({
     ...d,
+    // Saidas = despesas + impostos PJ do mes anterior (mesma conta do saldo, WORK-35).
+    outflows: d.totalExpenses + d.pjTaxes,
     label: shortMonth(d.month),
     current: d.year === selectedYear && d.month === selectedMonth,
   }));
@@ -122,8 +124,8 @@ export function EvolutionChart({ data, selectedYear, selectedMonth, visible, mas
                 ))}
               </Bar>
               <Bar
-                dataKey="totalExpenses"
-                name="Saídas (despesas)"
+                dataKey="outflows"
+                name="Saídas (despesas + impostos)"
                 fill={EXPENSES_COLOR}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={36}
