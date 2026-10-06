@@ -55,8 +55,37 @@ public class BrapiClient {
         }
     }
 
+    /**
+     * Fechamentos diarios dos ultimos 3 meses (limite do plano gratuito) — WORK-36.
+     * Vazio em caso de erro: o historico cai para o preco estimado.
+     */
+    public List<BrapiDailyPrice> fetchHistory(String ticker) {
+        try {
+            String uri = "/api/quote/" + ticker + "?range=3mo&interval=1d" + (token.isBlank() ? "" : "&token=" + token);
+            BrapiHistoryResponse response = restClient.get().uri(uri).retrieve().body(BrapiHistoryResponse.class);
+            if (response == null || response.results() == null || response.results().isEmpty()
+                    || response.results().get(0).historicalDataPrice() == null) {
+                return List.of();
+            }
+            return response.results().get(0).historicalDataPrice();
+        } catch (Exception e) {
+            log.warn("Brapi historico falhou para {}: {}", ticker, e.getMessage());
+            return List.of();
+        }
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record BrapiResponse(List<BrapiQuote> results) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record BrapiHistoryResponse(List<BrapiHistoryResult> results) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record BrapiHistoryResult(List<BrapiDailyPrice> historicalDataPrice) {}
+
+    /** {@code date} em segundos (epoch). */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record BrapiDailyPrice(long date, BigDecimal close) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record BrapiQuote(

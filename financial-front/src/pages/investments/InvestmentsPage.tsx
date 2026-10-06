@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Activity, Layers, Pencil, Plus, RotateCcw, Search, Trash2, TrendingUp, Wallet } from 'lucide-react';
+import { Activity, ChevronDown, ChevronUp, Coins, Layers, Pencil, Plus, RotateCcw, Search, Trash2, TrendingUp, Wallet } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { KpiCard } from '../../components/ui/KpiCard';
@@ -8,6 +8,9 @@ import { Table } from '../../components/ui/Table';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Pagination } from '../../components/ui/Pagination';
 import { InvestmentFormModal } from './InvestmentFormModal';
+import { InvestmentTransactionModal } from './InvestmentTransactionModal';
+import { InvestmentIncomeModal } from './InvestmentIncomeModal';
+import { InvestmentHistoryPanel } from './InvestmentHistoryPanel';
 import { investmentService } from '../../services/investmentService';
 import { formatCurrency } from '../../utils/currency';
 import { extractApiError } from '../../utils/apiError';
@@ -26,6 +29,12 @@ export function InvestmentsPage() {
   const [editing, setEditing] = useState<Investment | null>(null);
   const [removing, setRemoving] = useState<Investment | null>(null);
   const [removingLoading, setRemovingLoading] = useState(false);
+  // WORK-36: aportes, proventos e historico por ativo
+  const [txFor, setTxFor] = useState<string | null | undefined>(undefined);
+  const [incomeFor, setIncomeFor] = useState<string | null | undefined>(undefined);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const activeItems = useMemo(() => allItems.filter((i) => i.active), [allItems]);
 
   async function reload() {
     setLoading(true);
@@ -115,10 +124,20 @@ export function InvestmentsPage() {
         icon={TrendingUp}
         tone="blue"
         actions={
-          <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
-            <Plus className="h-4 w-4" />
-            Novo
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => setIncomeFor(null)} disabled={activeItems.length === 0}>
+              <Coins className="h-4 w-4" />
+              Registrar provento
+            </Button>
+            <Button variant="outline" onClick={() => { setEditing(null); setFormOpen(true); }}>
+              <Plus className="h-4 w-4" />
+              Novo ativo
+            </Button>
+            <Button onClick={() => setTxFor(null)} disabled={activeItems.length === 0}>
+              <Plus className="h-4 w-4" />
+              Registrar aporte
+            </Button>
+          </>
         }
       />
 
@@ -171,6 +190,8 @@ export function InvestmentsPage() {
 
       <Table<Investment>
         rowKey={(r) => r.id}
+        expandedRowKey={expandedId}
+        expandedRowContent={(r) => <InvestmentHistoryPanel key={r.id} investment={r} onChanged={reload} />}
         loading={loading}
         empty="Nenhum investimento cadastrado."
         columns={[
@@ -222,11 +243,32 @@ export function InvestmentsPage() {
           {
             header: 'Ações',
             align: 'right',
-            width: '120px',
+            width: '200px',
             render: (r) => (
               <div className="flex justify-end gap-1">
+                <button
+                  className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition-colors"
+                  onClick={() => setExpandedId((cur) => (cur === r.id ? null : r.id))}
+                  title={expandedId === r.id ? 'Fechar histórico' : 'Ver histórico (aportes e proventos)'}
+                >
+                  {expandedId === r.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </button>
                 {r.active ? (
                   <>
+                    <button
+                      className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-emerald-600 transition-colors"
+                      onClick={() => setTxFor(r.id)}
+                      title="Registrar aporte"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                    <button
+                      className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-amber-600 transition-colors"
+                      onClick={() => setIncomeFor(r.id)}
+                      title="Registrar provento"
+                    >
+                      <Coins className="h-4 w-4" />
+                    </button>
                     <button
                       className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-accent transition-colors"
                       onClick={() => { setEditing(r); setFormOpen(true); }}
@@ -266,6 +308,22 @@ export function InvestmentsPage() {
         onPageChange={setCurrentPage}
       />
 
+      {txFor !== undefined && (
+        <InvestmentTransactionModal
+          investments={activeItems}
+          defaultInvestmentId={txFor ?? undefined}
+          onClose={() => setTxFor(undefined)}
+          onSaved={reload}
+        />
+      )}
+      {incomeFor !== undefined && (
+        <InvestmentIncomeModal
+          investments={activeItems}
+          defaultInvestmentId={incomeFor ?? undefined}
+          onClose={() => setIncomeFor(undefined)}
+          onSaved={reload}
+        />
+      )}
       <InvestmentFormModal
         open={formOpen}
         onClose={() => setFormOpen(false)}

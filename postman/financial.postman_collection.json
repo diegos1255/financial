@@ -381,6 +381,125 @@
               "path": ["api", "investments", "{{investmentId}}"]
             }
           }
+        },
+        {
+          "name": "GET /history (evolução patrimonial, WORK-36)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/history?months=12",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "investments",
+                "history"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /{id}/transactions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/{{investmentId}}/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "investments",
+                "{{investmentId}}",
+                "transactions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /{id}/transactions (aporte)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/{{investmentId}}/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "investments",
+                "{{investmentId}}",
+                "transactions"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"BUY\",\n  \"tradeDate\": \"2026-10-06\",\n  \"quantity\": 10,\n  \"unitPrice\": 8.39\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /{id}/incomes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/{{investmentId}}/incomes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "investments",
+                "{{investmentId}}",
+                "incomes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /{id}/incomes (provento)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/{{investmentId}}/incomes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "investments",
+                "{{investmentId}}",
+                "incomes"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"RENDIMENTO\",\n  \"paymentDate\": \"2026-10-07\",\n  \"amount\": 36.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         }
       ]
     },

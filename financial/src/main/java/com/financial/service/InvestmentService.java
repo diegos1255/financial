@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,15 +37,18 @@ public class InvestmentService {
     private final InvestmentMapper mapper;
     private final EntityManager entityManager;
     private final MarketPriceService marketPriceService;
+    private final InvestmentLedgerService ledgerService;
 
     public InvestmentService(InvestmentRepository repository,
                              InvestmentMapper mapper,
                              EntityManager entityManager,
-                             MarketPriceService marketPriceService) {
+                             MarketPriceService marketPriceService,
+                             InvestmentLedgerService ledgerService) {
         this.repository = repository;
         this.mapper = mapper;
         this.entityManager = entityManager;
         this.marketPriceService = marketPriceService;
+        this.ledgerService = ledgerService;
     }
 
     @Transactional(readOnly = true)
@@ -119,11 +123,14 @@ public class InvestmentService {
         Investment entity = Investment.builder()
                 .user(entityManager.getReference(User.class, userId))
                 .ticker(ticker)
-                .quantity(request.quantity())
+                .quantity(request.quantity() == null ? 0 : request.quantity())
                 .description(request.description())
                 .active(true)
                 .build();
-        return mapper.toResponse(repository.save(entity));
+        Investment saved = repository.save(entity);
+        // Quantidade informada na criacao = saldo inicial (WORK-36).
+        ledgerService.createInitial(saved, userId, saved.getQuantity(), LocalDate.now());
+        return mapper.toResponse(saved);
     }
 
     public InvestmentResponse update(UUID id, InvestmentRequest request) {
@@ -133,7 +140,7 @@ public class InvestmentService {
             throw new ResourceConflictException("Já existe um investimento com este ticker");
         }
         entity.setTicker(ticker);
-        entity.setQuantity(request.quantity());
+        // Quantidade nao e mais editavel aqui: vem das movimentacoes (WORK-36).
         entity.setDescription(request.description());
         return mapper.toResponse(repository.save(entity));
     }
