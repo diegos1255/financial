@@ -32,8 +32,8 @@ export const expenseService = {
     const { data } = await api.put<Expense>(`/api/expenses/${id}`, payload);
     return data;
   },
-  async cancel(id: string): Promise<void> {
-    await api.post(`/api/expenses/${id}/cancel`);
+  async cancel(id: string, reason: string): Promise<void> {
+    await api.post(`/api/expenses/${id}/cancel`, { reason });
   },
   async listInstallments(id: string): Promise<Installment[]> {
     const { data } = await api.get<Installment[]>(`/api/expenses/${id}/installments`);

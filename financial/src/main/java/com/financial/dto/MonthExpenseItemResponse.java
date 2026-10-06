@@ -7,10 +7,12 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Despesa que compoe o total do mes no dashboard. {@code date} e null para fixas
- * (valem o mes inteiro); {@code installmentLabel} so existe para parcelas ("3/10").
+ * Saida que compoe o mes no dashboard. {@code kind}: EXPENSE (despesa; {@code type} preenchido)
+ * ou PJ_TAX (imposto PJ do mes anterior; {@code type} null). {@code date} e null para fixas e impostos;
+ * {@code installmentLabel} so existe para parcelas ("3/10").
  */
 public record MonthExpenseItemResponse(
+        String kind,
         UUID expenseId,
         String description,
         String categoryName,

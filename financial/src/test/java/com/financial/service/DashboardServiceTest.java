@@ -6,6 +6,8 @@ import com.financial.dto.MonthExpenseItemResponse;
 import com.financial.model.Expense;
 import com.financial.model.ExpenseCategory;
 import com.financial.model.Installment;
+import com.financial.model.PjEntry;
+import com.financial.model.enums.PjEntryType;
 import com.financial.model.enums.ExpenseType;
 import com.financial.model.enums.InstallmentStatus;
 import com.financial.repository.DashboardRepository;
@@ -111,6 +113,44 @@ class DashboardServiceTest {
                 .singleElement()
                 .extracting(MonthExpenseItemResponse::amount)
                 .isEqualTo(new BigDecimal("300.00"));
+    }
+
+    @Test
+    void balance_subtractsPjTaxesOfPreviousMonth() {
+        when(repository.sumSalary(eq(USER_ID), eq(2026), eq(10))).thenReturn(new BigDecimal("16000.00"));
+        when(repository.sumFixedExpenses(eq(USER_ID), any())).thenReturn(new BigDecimal("8000.00"));
+        // Impostos da NF de setembro pesam no saldo de outubro.
+        when(repository.listPjTaxes(USER_ID, 2026, 9))
+                .thenReturn(List.of(tax(PjEntryType.DAS, "960.00"), tax(PjEntryType.ACCOUNTING, "119.00")));
+
+        var balance = service.balance(2026, 10);
+
+        assertThat(balance.totalExpenses()).isEqualByComparingTo("8000.00");
+        assertThat(balance.pjTaxes()).isEqualByComparingTo("1079.00");
+        assertThat(balance.balance()).isEqualByComparingTo("6921.00");
+        assertThat(service.evolution(2026, 10, 1).getFirst().pjTaxes()).isEqualByComparingTo("1079.00");
+    }
+
+    @Test
+    void monthExpenses_includesPreviousMonthTaxes() {
+        when(repository.listPjTaxes(USER_ID, 2026, 9)).thenReturn(List.of(tax(PjEntryType.DAS, "960.00")));
+
+        List<MonthExpenseItemResponse> items = service.monthExpenses(2026, 10);
+
+        assertThat(items).singleElement().satisfies(i -> {
+            assertThat(i.kind()).isEqualTo("PJ_TAX");
+            assertThat(i.type()).isNull();
+            assertThat(i.description()).isEqualTo("DAS — ref. setembro");
+            assertThat(i.amount()).isEqualByComparingTo("960.00");
+        });
+    }
+
+    private static PjEntry tax(PjEntryType type, String amount) {
+        PjEntry p = new PjEntry();
+        p.setId(UUID.randomUUID());
+        p.setType(type);
+        p.setAmount(new BigDecimal(amount));
+        return p;
     }
 
     private static Expense expense(String description, ExpenseType type, String amount, Integer installments) {

@@ -86,7 +86,7 @@ export function MonthDetailPanel({ kind, year, month, mask, onClose }: Props) {
             <tbody>
               {data.items.map((i, idx) => (
                 <tr key={`${i.expenseId}-${i.installmentLabel ?? idx}`} className="border-b border-slate-100 last:border-0">
-                  <td className="whitespace-nowrap px-4 py-2 text-slate-500">{i.date ? formatDate(i.date) : 'Mensal'}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-slate-500">{i.date ? formatDate(i.date) : i.kind === 'PJ_TAX' ? '—' : 'Mensal'}</td>
                   <td className="px-4 py-2 text-slate-800">
                     {i.description}
                     {i.installmentLabel && <span className="ml-1 text-xs text-slate-400">({i.installmentLabel})</span>}
@@ -98,7 +98,13 @@ export function MonthDetailPanel({ kind, year, month, mask, onClose }: Props) {
                     </span>
                   </td>
                   <td className="px-4 py-2">
-                    <ExpenseTypeBadge type={i.type} />
+                    {i.type ? (
+                      <ExpenseTypeBadge type={i.type} />
+                    ) : (
+                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+                        Imposto
+                      </span>
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-4 py-2 text-right font-medium tabular-nums text-slate-900">
                     {mask(formatCurrency(i.amount))}

@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { salaryService } from '../../services/salaryService';
 import { extractApiError } from '../../utils/apiError';
-import { monthLabel } from '../../utils/months';
+import { monthLabel, shiftedMonthLabel } from '../../utils/months';
 import type { SalaryMonth } from '../../types/salary';
 
 // Montado so enquanto aberto: o estado inicial vem direto de `data`.
@@ -60,7 +60,8 @@ export function SalaryTotalModal({ onClose, onSaved, data }: Props) {
       <div className="flex flex-col gap-4">
         {data.expectedFromInvoice && (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            Este total vem da Nota Fiscal do mês. Se a NF for alterada, ele será sobrescrito.
+            Este total vem da Nota Fiscal de {shiftedMonthLabel(data.referenceMonth, -1).toLowerCase()} (mês
+            trabalhado). Se essa NF for alterada, ele será sobrescrito.
           </div>
         )}
         <CurrencyInput id="sal-total" label="Total a receber" value={amount} onChange={setAmount} autoFocus />

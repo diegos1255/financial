@@ -14,7 +14,7 @@ import { AnimatedCurrency } from '../components/ui/AnimatedCurrency';
 import { FillBar } from '../components/ui/FillBar';
 import { Reveal } from '../components/ui/Reveal';
 import { LoginTransition } from './dashboard/LoginTransition';
-import { salaryTone } from './salaries/salaryTone';
+import { progressTone } from '../utils/progressTone';
 import { dashboardService } from '../services/dashboardService';
 import { investmentService } from '../services/investmentService';
 import { pjService } from '../services/pjService';
@@ -63,7 +63,7 @@ const NO_TAXES: PjTaxes = { das: 0, inss: 0, accounting: 0 };
 
 function SalaryProgress({ received, expected, mask }: { received: number; expected: number; mask: (v: string) => string }) {
   const percent = expected > 0 ? Math.min(100, Math.round((received / expected) * 100)) : 0;
-  const tone = salaryTone(received);
+  const tone = progressTone(received, expected);
   return (
     <div className="flex flex-col gap-1.5">
       <span>de {mask(formatCurrency(expected))} previstos</span>
@@ -250,6 +250,7 @@ export function DashboardPage() {
             icon={<Wallet className="h-5 w-5" />}
             variant={balanceVariant}
             accent={balance && balance.balance < 0 ? 'red' : 'emerald'}
+            subtitle="Salário − despesas − impostos PJ"
           />
         </Reveal>
         <Reveal delay={480} className="h-full [&>*]:h-full">

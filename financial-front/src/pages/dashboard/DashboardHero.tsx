@@ -40,7 +40,7 @@ function summary(
 
   const money = (v: number) => <strong className="font-semibold text-slate-900">{formatCurrency(v)}</strong>;
 
-  if (balance.salary === 0 && balance.totalExpenses === 0) {
+  if (balance.salary === 0 && balance.totalExpenses === 0 && balance.pjTaxes === 0) {
     return { text: `Nenhum lançamento em ${monthName} ainda.`, mood: null };
   }
   if (balance.balance >= 0) {

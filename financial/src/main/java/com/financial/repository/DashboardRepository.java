@@ -2,9 +2,11 @@ package com.financial.repository;
 
 import com.financial.model.Expense;
 import com.financial.model.Installment;
+import com.financial.model.PjEntry;
 import com.financial.model.enums.ExpenseStatus;
 import com.financial.model.enums.ExpenseType;
 import com.financial.model.enums.InstallmentStatus;
+import com.financial.model.enums.PjEntryType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Tuple;
 import org.springframework.stereotype.Repository;
@@ -245,6 +247,22 @@ public class DashboardRepository {
                 .setParameter("active", ExpenseStatus.ACTIVE)
                 .setParameter("startOfMonth", startOfMonth)
                 .setParameter("endOfMonth", endOfMonth)
+                .getResultList();
+    }
+
+    /** Encargos do PJ (DAS, INSS, contabilidade) lancados na competencia informada (WORK-35). */
+    public List<PjEntry> listPjTaxes(UUID userId, int year, int month) {
+        return em.createQuery("""
+                        SELECT p FROM PjEntry p
+                         WHERE p.user.id = :userId
+                           AND p.year = :year
+                           AND p.month = :month
+                           AND p.type IN :types
+                        """, PjEntry.class)
+                .setParameter("userId", userId)
+                .setParameter("year", year)
+                .setParameter("month", month)
+                .setParameter("types", List.of(PjEntryType.DAS, PjEntryType.INSS, PjEntryType.ACCOUNTING))
                 .getResultList();
     }
 }

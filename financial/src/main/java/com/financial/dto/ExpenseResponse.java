@@ -19,6 +19,7 @@ public record ExpenseResponse(
         LocalDate firstDueDate,
         Integer installmentsCount,
         OffsetDateTime cancelledAt,
+        String cancellationReason,
         RefDto category,
         RefDto bankAccount,
         List<InstallmentResponse> installments,

@@ -3,8 +3,9 @@ import { Button } from '../../components/ui/Button';
 import { FillBar } from '../../components/ui/FillBar';
 import { AnimatedCurrency } from '../../components/ui/AnimatedCurrency';
 import { formatCurrency } from '../../utils/currency';
+import { shiftedMonthLabel } from '../../utils/months';
 import type { SalaryMonth } from '../../types/salary';
-import { salaryTone } from './salaryTone';
+import { progressTone } from '../../utils/progressTone';
 
 type Props = {
   data: SalaryMonth | null;
@@ -22,7 +23,7 @@ export function SalarySummaryCard({ data, loading, onEditTotal }: Props) {
   const remaining = data.remainingAmount;
   const overpaid = remaining !== null && remaining < 0;
   const percent = expected ? Math.min(100, Math.round((received / expected) * 100)) : 0;
-  const tone = salaryTone(received);
+  const tone = progressTone(received, expected);
 
   return (
     <div className="relative mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-50 via-white via-45% to-white p-5 pl-6 shadow-soft">
@@ -34,9 +35,12 @@ export function SalarySummaryCard({ data, loading, onEditTotal }: Props) {
             <div className="mt-1 flex items-baseline gap-2">
               <span className="text-xl font-semibold tabular-nums text-slate-900">{formatCurrency(expected)}</span>
               {data.expectedFromInvoice && (
-                <span className="inline-flex items-center gap-1 text-xs text-emerald-600" title="Total vindo da Nota Fiscal do mês">
+                <span
+                  className="inline-flex items-center gap-1 text-xs text-emerald-600"
+                  title="Total vindo da Nota Fiscal do mês trabalhado (mês anterior)"
+                >
                   <FileText className="h-3.5 w-3.5" />
-                  da NF
+                  da NF de {shiftedMonthLabel(data.referenceMonth, -1).toLowerCase()}
                 </span>
               )}
             </div>

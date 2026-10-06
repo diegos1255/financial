@@ -7,5 +7,6 @@ public record MonthEvolutionResponse(
         Integer month,
         BigDecimal salary,
         BigDecimal totalExpenses,
+        BigDecimal pjTaxes,
         BigDecimal balance
 ) {}

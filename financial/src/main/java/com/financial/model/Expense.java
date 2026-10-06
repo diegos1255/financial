@@ -91,6 +91,10 @@ public class Expense extends BaseEntity {
     @Column(name = "cancelled_at")
     private OffsetDateTime cancelledAt;
 
+    // Motivo informado ao cancelar (WORK-35). NULL nas canceladas antes dessa regra.
+    @Column(name = "cancellation_reason", length = 255)
+    private String cancellationReason;
+
     @OneToMany(
             mappedBy = "expense",
             cascade = CascadeType.ALL,

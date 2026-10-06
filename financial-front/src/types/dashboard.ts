@@ -11,6 +11,8 @@ export type BalanceResponse = {
   month: number;
   salary: number;
   totalExpenses: number;
+  /** Impostos PJ do mes anterior, ja descontados do saldo (WORK-35). */
+  pjTaxes: number;
   balance: number;
   breakdown: BalanceBreakdown;
 };
@@ -27,15 +29,18 @@ export type MonthEvolution = {
   month: number;
   salary: number;
   totalExpenses: number;
+  pjTaxes: number;
   balance: number;
 };
 
 export type MonthExpenseItem = {
+  /** EXPENSE = despesa; PJ_TAX = imposto PJ do mes anterior (sem `type`). */
+  kind: 'EXPENSE' | 'PJ_TAX';
   expenseId: string;
   description: string;
   categoryName: string;
   categoryColor: string | null;
-  type: 'FIXED' | 'INSTALLMENT' | 'VARIABLE';
+  type: 'FIXED' | 'INSTALLMENT' | 'VARIABLE' | null;
   date: string | null;
   amount: number;
   installmentLabel: string | null;

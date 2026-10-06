@@ -44,7 +44,7 @@ public class ChatQueryController {
     public ChatAnswer query(@Valid @RequestBody ChatQueryRequest request) {
         if (!props.isEnabled()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Chat desabilitado — configure GEMINI_API_KEY");
+                    "Chat desabilitado");
         }
         String question = sanitize(request.question());
 

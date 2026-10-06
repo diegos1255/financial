@@ -80,6 +80,7 @@ tts:
     endpoint: https://api.elevenlabs.io/v1/text-to-speech
 
 chat:
+  enabled: ${FEATURES_CHAT_ENABLED:true}
   gemini:
     api-key: ${GEMINI_API_KEY:}
     base-url: https://generativelanguage.googleapis.com/v1beta

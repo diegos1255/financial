@@ -47,6 +47,7 @@ export function ExpensesPage() {
   const [updateTarget, setUpdateTarget] = useState<Expense | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Expense | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [monthTotal, setMonthTotal] = useState<number | null>(null);
@@ -97,7 +98,7 @@ export function ExpensesPage() {
     if (!cancelTarget) return;
     setCancelLoading(true);
     try {
-      await expenseService.cancel(cancelTarget.id);
+      await expenseService.cancel(cancelTarget.id, cancelReason.trim());
       toast.success('Despesa cancelada');
       setCancelTarget(null);
       reload();
@@ -316,10 +317,11 @@ export function ExpensesPage() {
               header: 'Parcelas',
               align: 'center',
               render: (r) => {
-                const empty = <span className="text-slate-300">—</span>;
-                if (r.expenseType !== 'INSTALLMENT') return empty;
+                // Fixa/variavel nao tem parcelas: descreve o tipo de pagamento em vez de um traco (WORK-35).
+                if (r.expenseType === 'FIXED') return <span className="text-xs text-slate-400">Mensal</span>;
+                if (r.expenseType === 'VARIABLE') return <span className="text-xs text-slate-400">À vista</span>;
                 const progress = installmentProgress(r.installments);
-                if (!progress) return empty;
+                if (!progress) return <span className="text-xs text-slate-400">—</span>;
                 const allPaid = progress.paid === progress.total;
                 return (
                   <span className={`text-xs font-medium ${allPaid ? 'text-emerald-600' : 'text-slate-500'}`}>
@@ -351,48 +353,83 @@ export function ExpensesPage() {
                 r.status === 'ACTIVE' ? (
                   <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">Ativa</span>
                 ) : (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">Cancelada</span>
+                  <span
+                    className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"
+                    title={`Motivo: ${r.cancellationReason ?? 'não informado'}`}
+                  >
+                    Cancelada
+                  </span>
                 ),
             },
-            {
-              header: 'Ações',
-              align: 'right',
-              width: '140px',
-              render: (r) => (
-                <div className="flex justify-end gap-1">
-                  {r.expenseType === 'INSTALLMENT' && r.status === 'ACTIVE' && (
-                    <button
-                      className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition-colors"
-                      onClick={() => toggleExpand(r.id)}
-                      title={expandedId === r.id ? 'Fechar parcelas' : 'Ver parcelas'}
-                    >
-                      {expandedId === r.id
-                        ? <ChevronUp className="h-4 w-4" />
-                        : <ChevronDown className="h-4 w-4" />
-                      }
-                    </button>
-                  )}
-                  {r.status === 'ACTIVE' && (
-                    <>
-                      <button
-                        className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-accent transition-colors"
-                        onClick={() => setUpdateTarget(r)}
-                        title="Editar"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        className="rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        onClick={() => setCancelTarget(r)}
-                        title="Cancelar despesa"
-                      >
-                        <Ban className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              ),
-            },
+            // Coluna so no filtro "Canceladas" (WORK-35, D-3); em "Todos status" o motivo fica no tooltip.
+            ...(status === 'CANCELLED'
+              ? [
+                  {
+                    header: 'Motivo',
+                    align: 'left' as const,
+                    render: (r: Expense) => (
+                      <div className="max-w-xs">
+                        <p
+                          className={`truncate ${r.cancellationReason ? 'text-slate-700' : 'italic text-slate-400'}`}
+                          title={r.cancellationReason ?? undefined}
+                        >
+                          {r.cancellationReason ?? 'Motivo não informado'}
+                        </p>
+                        {r.cancelledAt && (
+                          <p className="text-xs text-slate-400">em {formatDate(r.cancelledAt)}</p>
+                        )}
+                      </div>
+                    ),
+                  },
+                ]
+              : []),
+            // Canceladas nao tem acao possivel: a coluna some nesse filtro (WORK-35).
+            ...(status === 'CANCELLED'
+              ? []
+              : [
+                {
+                  header: 'Ações',
+                  align: 'right' as const,
+                  width: '140px',
+                  render: (r: Expense) => (
+                    <div className="flex justify-end gap-1">
+                      {r.expenseType === 'INSTALLMENT' && r.status === 'ACTIVE' && (
+                        <button
+                          className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition-colors"
+                          onClick={() => toggleExpand(r.id)}
+                          title={expandedId === r.id ? 'Fechar parcelas' : 'Ver parcelas'}
+                        >
+                          {expandedId === r.id
+                            ? <ChevronUp className="h-4 w-4" />
+                            : <ChevronDown className="h-4 w-4" />
+                          }
+                        </button>
+                      )}
+                      {r.status === 'ACTIVE' && (
+                        <>
+                          <button
+                            className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-accent transition-colors"
+                            onClick={() => setUpdateTarget(r)}
+                            title="Editar"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            className="rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            onClick={() => {
+                              setCancelReason('');
+                              setCancelTarget(r);
+                            }}
+                            title="Cancelar despesa"
+                          >
+                            <Ban className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ),
+                },
+              ]),
           ]}
           data={pageItems}
         />
@@ -436,12 +473,27 @@ export function ExpensesPage() {
                 <>As parcelas com status <em>PENDING</em> também serão canceladas em cascata. Parcelas
                   pagas permanecem.</>
               )}
+              <label htmlFor="cancel-reason" className="mt-4 block text-sm font-medium text-slate-700">
+                Motivo do cancelamento <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="cancel-reason"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                maxLength={255}
+                rows={3}
+                autoFocus
+                placeholder="Ex.: troquei de plano de celular"
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+              <p className="mt-1 text-right text-xs text-slate-400">{cancelReason.length}/255</p>
             </>
           )
         }
         confirmLabel="Cancelar despesa"
         cancelLabel="Voltar"
         loading={cancelLoading}
+        confirmDisabled={cancelReason.trim() === ''}
       />
     </div>
   );
