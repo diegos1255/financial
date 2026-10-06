@@ -1,5 +1,14 @@
 import { api } from './api';
-import type { Investment, InvestmentPortfolioResponse, InvestmentRequest } from '../types/investment';
+import type {
+  Investment,
+  InvestmentIncome,
+  InvestmentIncomeRequest,
+  InvestmentPortfolioResponse,
+  InvestmentRequest,
+  InvestmentTransaction,
+  InvestmentTransactionRequest,
+  PortfolioHistory,
+} from '../types/investment';
 import type { PageResponse } from '../types/page';
 
 export const investmentService = {
@@ -40,5 +49,39 @@ export const investmentService = {
 
   async remove(id: string): Promise<void> {
     await api.delete(`/api/investments/${id}`);
+  },
+
+  // ---- WORK-36 ----
+  async listTransactions(id: string): Promise<InvestmentTransaction[]> {
+    const { data } = await api.get<InvestmentTransaction[]>(`/api/investments/${id}/transactions`);
+    return data;
+  },
+
+  async addTransaction(id: string, payload: InvestmentTransactionRequest): Promise<InvestmentTransaction> {
+    const { data } = await api.post<InvestmentTransaction>(`/api/investments/${id}/transactions`, payload);
+    return data;
+  },
+
+  async removeTransaction(transactionId: string): Promise<void> {
+    await api.delete(`/api/investments/transactions/${transactionId}`);
+  },
+
+  async listIncomes(id: string): Promise<InvestmentIncome[]> {
+    const { data } = await api.get<InvestmentIncome[]>(`/api/investments/${id}/incomes`);
+    return data;
+  },
+
+  async addIncome(id: string, payload: InvestmentIncomeRequest): Promise<InvestmentIncome> {
+    const { data } = await api.post<InvestmentIncome>(`/api/investments/${id}/incomes`, payload);
+    return data;
+  },
+
+  async removeIncome(incomeId: string): Promise<void> {
+    await api.delete(`/api/investments/incomes/${incomeId}`);
+  },
+
+  async history(months = 12): Promise<PortfolioHistory> {
+    const { data } = await api.get<PortfolioHistory>('/api/investments/history', { params: { months } });
+    return data;
   },
 };

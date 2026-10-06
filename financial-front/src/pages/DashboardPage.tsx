@@ -8,6 +8,7 @@ import { CategoryExpensesModal } from './dashboard/CategoryExpensesModal';
 import { PortfolioCard } from './dashboard/PortfolioCard';
 import { SeveranceCard } from './dashboard/SeveranceCard';
 import { EvolutionChart } from './dashboard/EvolutionChart';
+import { PortfolioEvolutionCard } from './dashboard/PortfolioEvolutionCard';
 import { DashboardHero } from './dashboard/DashboardHero';
 import { useAuth } from '../hooks/useAuth';
 import { AnimatedCurrency } from '../components/ui/AnimatedCurrency';
@@ -23,6 +24,7 @@ import { salaryService } from '../services/salaryService';
 import type { BalanceResponse, CategoryExpense, MonthEvolution } from '../types/dashboard';
 import type { InvestmentPortfolioResponse } from '../types/investment';
 import type { Severance } from '../types/severance';
+import type { PortfolioHistory } from '../types/investment';
 import type { SalaryMonth } from '../types/salary';
 import { formatCurrency } from '../utils/currency';
 import { MONTHS, monthLabel, yearRange } from '../utils/months';
@@ -85,6 +87,7 @@ export function DashboardPage() {
   const [prevMonthTaxes, setPrevMonthTaxes] = useState<PjTaxes>(NO_TAXES);
   const [salaryMonth, setSalaryMonth] = useState<SalaryMonth | null>(null);
   const [evolution, setEvolution] = useState<MonthEvolution[]>([]);
+  const [portfolioHistory, setPortfolioHistory] = useState<PortfolioHistory | null>(null);
   const [severance, setSeverance] = useState<Severance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,8 +122,9 @@ export function DashboardPage() {
       severanceService.get().catch(() => null),
       salaryService.getMonth(year, month).catch(() => null),
       dashboardService.evolution({ year, month, months: 6 }).catch(() => []),
+      investmentService.history(12).catch(() => null),
     ])
-      .then(([b, c, p, pjPrev, sev, sal, evo]) => {
+      .then(([b, c, p, pjPrev, sev, sal, evo, hist]) => {
         if (!cancelled) {
           setBalance(b);
           setByCategory(c);
@@ -128,6 +132,8 @@ export function DashboardPage() {
           setSeverance(sev);
           setSalaryMonth(sal);
           setEvolution(evo);
+          // So aparece com movimentacoes registradas (WORK-36).
+          setPortfolioHistory(hist && hist.months.some((m) => m.marketValue > 0) ? hist : null);
           const sumOf = (type: string) =>
             pjPrev.filter((e) => e.type === type).reduce((sum, e) => sum + e.amount, 0);
           setPrevMonthTaxes({ das: sumOf('DAS'), inss: sumOf('INSS'), accounting: sumOf('ACCOUNTING') });
@@ -311,6 +317,12 @@ export function DashboardPage() {
       <Reveal delay={720} className="mb-4">
         <EvolutionChart key={`${year}-${month}`} data={evolution} selectedYear={year} selectedMonth={month} visible={visible} mask={mask} />
       </Reveal>
+
+      {portfolioHistory && (
+        <Reveal delay={840} className="mb-4">
+          <PortfolioEvolutionCard history={portfolioHistory} visible={visible} mask={mask} />
+        </Reveal>
+      )}
 
       <CategoryExpensesModal
         open={categoryModal.open}

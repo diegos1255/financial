@@ -40,11 +40,12 @@ export function InvestmentFormModal({ open, onClose, onSaved, editing }: Props) 
     setError(null);
     const q = Number(quantity);
     if (!ticker.trim()) return setError('Ticker é obrigatório');
-    if (!Number.isInteger(q) || q < 1) return setError('Quantidade deve ser inteiro >= 1');
+    // Na edicao a quantidade nao muda aqui: vem dos aportes (WORK-36).
+    if (!editing && (!Number.isInteger(q) || q < 1)) return setError('Quantidade deve ser inteiro >= 1');
 
     const payload: Payload = {
       ticker: ticker.trim().toUpperCase(),
-      quantity: q,
+      quantity: editing ? editing.quantity : q,
       description: description.trim() || null,
     };
 
@@ -134,14 +135,21 @@ export function InvestmentFormModal({ open, onClose, onSaved, editing }: Props) 
             placeholder="PETR4"
             autoFocus
           />
-          <Input
-            id="inv-qty"
-            label="Quantidade"
-            type="number"
-            min={1}
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-          />
+          {editing ? (
+            <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              <strong className="text-slate-900">{editing.quantity}</strong> cotas — a quantidade é atualizada pelos{' '}
+              <strong>aportes</strong> (compras e vendas).
+            </p>
+          ) : (
+            <Input
+              id="inv-qty"
+              label="Quantidade atual (saldo inicial)"
+              type="number"
+              min={1}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+          )}
           <Input
             id="inv-desc"
             label="Descrição (opcional)"
