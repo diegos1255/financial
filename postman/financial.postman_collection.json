@@ -702,6 +702,12 @@
           "name": "POST /{id}/cancel",
           "request": {
             "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Troquei de plano de celular\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
             "url": {
               "raw": "{{baseUrl}}/api/expenses/{{expenseId}}/cancel",
               "host": ["{{baseUrl}}"],
