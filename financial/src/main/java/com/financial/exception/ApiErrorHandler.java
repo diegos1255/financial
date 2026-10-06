@@ -98,6 +98,12 @@ public class ApiErrorHandler {
                 .body(ApiError.of(422, "INSTALLMENT_NOT_PAID", e.getMessage()));
     }
 
+    @ExceptionHandler(InvalidInvestmentOperationException.class)
+    public ResponseEntity<ApiError> handleInvalidInvestmentOperation(InvalidInvestmentOperationException e) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(ApiError.of(422, "INVALID_INVESTMENT_OPERATION", e.getMessage()));
+    }
+
     @ExceptionHandler(InvalidPaymentDateException.class)
     public ResponseEntity<ApiError> handleInvalidPaymentDate(InvalidPaymentDateException e) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
