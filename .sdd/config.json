@@ -1,0 +1,66 @@
+{
+  "idioma": "pt-BR",
+  "perfis": [
+    "processo",
+    "java-spring",
+    "react-ts"
+  ],
+  "templateDeSpec": "04-development-spec-system-design-template.md",
+  "branchPrincipal": "master",
+  "pastasDeCodigo": [
+    "financial/src/**",
+    "security/src/**",
+    "financial-front/src/**"
+  ],
+  "checagens": [
+    {
+      "nome": "backend-testes",
+      "comando": "(cd ../security && ./mvnw -q install -DskipTests) && ./mvnw -q test",
+      "pasta": "financial"
+    },
+    {
+      "nome": "front-tipos",
+      "comando": "npx tsc -b",
+      "pasta": "financial-front"
+    },
+    {
+      "nome": "front-lint",
+      "comando": "npx eslint src",
+      "pasta": "financial-front",
+      "limiteErros": 34
+    }
+  ],
+  "app": {
+    "url": "http://localhost",
+    "subir": "docker compose -f financial/docker-compose.yml up -d --build backend frontend",
+    "esperaSegundos": 180,
+    "criarUsuario": "J=$(mktemp) && curl -s -c $J -o /dev/null $SDD_APP_URL/api/health && X=$(awk '/XSRF-TOKEN/{print $7}' $J) && curl -sf -b $J -H \"X-XSRF-TOKEN: $X\" -F name=\"$SDD_NOME\" -F login=\"$SDD_LOGIN\" -F password=\"$SDD_SENHA\" $SDD_APP_URL/api/auth/signup >/dev/null",
+    "apagarUsuario": "docker compose -f financial/docker-compose.yml exec -T postgres sh -c 'psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -v login=\"'$SDD_LOGIN'\" -f /dev/stdin' < .sdd/apagar-usuario.sql"
+  },
+  "revisores": {
+    "modelo": "sessao"
+  },
+  "arquivosSensiveis": [
+    "*.env",
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    "*.p12",
+    "*.pfx",
+    "*.xlsx",
+    "*.xls",
+    "*.csv"
+  ],
+  "palavrasDeAprovacao": [
+    "aprovo",
+    "aprovado",
+    "aprovada",
+    "pode seguir",
+    "manda bala",
+    "pode commitar",
+    "pode comitar",
+    "pode finalizar",
+    "pode fazer o merge"
+  ]
+}
