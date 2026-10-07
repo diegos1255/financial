@@ -134,9 +134,10 @@ surefire-reports/
 failsafe-reports/
 
 # ============================================
-# Claude Code (memory local — não vai pro git)
+# Claude Code (memory local — não vai pro git; settings.json do projeto vai)
 # ============================================
-.claude/
+.claude/*
+!.claude/settings.json
 
 # ============================================
 # Diversos / temporários

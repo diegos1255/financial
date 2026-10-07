@@ -1,0 +1,13 @@
+{
+  "enabledPlugins": {
+    "sdd-diego@diegos1255": true
+  },
+  "extraKnownMarketplaces": {
+    "diegos1255": {
+      "source": {
+        "source": "github",
+        "repo": "diegos1255/sdd-diego"
+      }
+    }
+  }
+}

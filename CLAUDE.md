@@ -93,3 +93,7 @@ Existe memória em `C:\Users\diego\.claude\projects\D--claude-financial\memory\`
 - Não instalar Maven globalmente; usar `mvnw` sempre.
 - Não criar **endpoints CRUD** de menu (decidido: apenas `GET /api/menus`; insert/update via SQL direto). Tabela `menus` existe no banco.
 - Não modificar `04-development-spec-system-design-template.md` (é o template-mestre).
+
+## Processo sdd-diego
+
+Este projeto usa o plugin sdd-diego. Regras em `.sdd/constituicao.md`; fluxo em `/sdd-diego:status`.
