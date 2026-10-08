@@ -3,6 +3,7 @@ package com.financial.gmail.service;
 import com.financial.auth.CurrentUser;
 import com.financial.gmail.api.GmailApiClient;
 import com.financial.gmail.dto.UnreadSummaryResponse;
+import com.financial.gmail.repository.GmailCredentialRepository;
 import com.financial.gmail.util.MessageParser;
 import org.springframework.stereotype.Service;
 
@@ -27,15 +28,23 @@ public class GmailNotificationService {
 
     private final GmailApiClient api;
     private final MessageParser parser;
+    private final GmailCredentialRepository credentialRepository;
     private final Map<UUID, CacheEntry> cache = new ConcurrentHashMap<>();
 
-    public GmailNotificationService(GmailApiClient api, MessageParser parser) {
+    public GmailNotificationService(GmailApiClient api, MessageParser parser,
+                                    GmailCredentialRepository credentialRepository) {
         this.api = api;
         this.parser = parser;
+        this.credentialRepository = credentialRepository;
     }
 
     public UnreadSummaryResponse getUnreadSummary() {
         UUID userId = CurrentUser.id();
+        // Sem cache e limpando o anterior: quem (re)conecta ve o resumo da conta atual no proximo polling.
+        if (!credentialRepository.existsByUserId(userId)) {
+            cache.remove(userId);
+            return UnreadSummaryResponse.notConnected();
+        }
         CacheEntry entry = cache.get(userId);
         Instant now = Instant.now();
         if (entry != null && entry.expiresAt.isAfter(now)) {
@@ -63,7 +72,7 @@ public class GmailNotificationService {
         Map<String, Object> resp = api.listMessages(null, UNREAD_LABEL, 1, null);
         String latestId = extractFirstMessageId(resp);
         if (latestId == null) {
-            return new UnreadSummaryResponse(total, null, null, null);
+            return new UnreadSummaryResponse(true, total, null, null, null);
         }
 
         try {
@@ -76,9 +85,9 @@ public class GmailNotificationService {
                     : List.of();
             String from = parser.extractHeader(headers, "From");
             String subject = parser.extractHeader(headers, "Subject");
-            return new UnreadSummaryResponse(total, latestId, from, subject);
+            return new UnreadSummaryResponse(true, total, latestId, from, subject);
         } catch (RuntimeException e) {
-            return new UnreadSummaryResponse(total, latestId, null, null);
+            return new UnreadSummaryResponse(true, total, latestId, null, null);
         }
     }
 
