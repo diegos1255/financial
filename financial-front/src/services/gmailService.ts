@@ -62,14 +62,13 @@ export const gmailService = {
   async getUnreadSummary(): Promise<UnreadSummary | null> {
     try {
       const { data } = await api.get<UnreadSummary>('/api/gmail/unread-summary');
-      return data;
+      return data.connected === false ? null : data;
     } catch (err) {
       const anyErr = err as { response?: { status?: number; data?: { code?: string } } };
       const status = anyErr.response?.status;
       const code = anyErr.response?.data?.code;
-      // 404 = nunca conectou; 401 GMAIL_REAUTH_REQUIRED = token expirou (backend
-      // ja deletou credential). Ambos significam "sem Gmail conectado" pro badge.
-      if (status === 404) return null;
+      // 401 GMAIL_REAUTH_REQUIRED = token expirou (backend ja deletou credential):
+      // igual a "sem Gmail conectado" pro badge.
       if (status === 401 && code === 'GMAIL_REAUTH_REQUIRED') return null;
       throw err;
     }
