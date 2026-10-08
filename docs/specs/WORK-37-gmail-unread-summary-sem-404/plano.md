@@ -1,5 +1,8 @@
 # Ajuste — WORK-37 unread-summary sem 404 para quem não conectou o Gmail
 
+- `última_atualização`: 2026-10-07
+- `status`: ✅ **Concluída** em 2026-10-07
+
 - **Pedido do Diego:** "o endpoint /api/gmail/unread-summary responde 404 quando o usuário não tem Gmail conectado; deveria responder normalmente (sem e-mails não lidos) para não gerar erro no console"
 - **O quê:** `GET /api/gmail/unread-summary` passa a responder **200** para quem não conectou o Gmail, com o resumo vazio e um campo novo `connected: false`. O front usa esse campo, e não mais o 404, para saber que não há Gmail conectado.
 - **Por que o campo `connected`:** hoje o front (`GmailNotificationsContext`) usa o 404 para marcar `isConnected = false`. Com um 200 "vazio" sem esse campo, quem não conectou viraria `isConnected = true` com 0 não lidos. O campo mantém a distinção sem precisar de um segundo endpoint.

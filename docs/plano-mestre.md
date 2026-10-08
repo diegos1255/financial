@@ -52,7 +52,7 @@ Controle financeiro pessoal multiusuário (salários por competência, despesas 
 | WORK-34 | Animações do dashboard | feature | ✅ concluída | 2026-10-05 | 8ab0855 |
 | WORK-35 | Ajustes: chave do chat, motivo do cancelamento e coluna Parcelas | ajuste | ✅ concluída | 2026-10-06 | 1f3486c |
 | WORK-36 | Histórico da carteira: aportes, importação da B3, proventos e evolução patrimonial | feature | ✅ concluída | 2026-10-06 | de36b32 |
-| WORK-37 | Gmail unread-summary responde 200 (`connected:false`) em vez de 404 sem Gmail conectado | ajuste | 🟡 em andamento | | |
+| WORK-37 | Gmail unread-summary responde 200 (`connected:false`) em vez de 404 sem Gmail conectado | ajuste | ✅ concluída | 2026-10-07 | |
 
 ## Próximas WORKs (backlog)
 
