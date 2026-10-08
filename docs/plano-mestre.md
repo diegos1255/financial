@@ -52,3 +52,14 @@ Controle financeiro pessoal multiusuário (salários por competência, despesas 
 | WORK-34 | Animações do dashboard | feature | ✅ concluída | 2026-10-05 | 8ab0855 |
 | WORK-35 | Ajustes: chave do chat, motivo do cancelamento e coluna Parcelas | ajuste | ✅ concluída | 2026-10-06 | 1f3486c |
 | WORK-36 | Histórico da carteira: aportes, importação da B3, proventos e evolução patrimonial | feature | ✅ concluída | 2026-10-06 | de36b32 |
+| WORK-37 | Gmail unread-summary responde 200 (`connected:false`) em vez de 404 sem Gmail conectado | ajuste | ✅ concluída | 2026-10-07 | |
+
+## Próximas WORKs (backlog)
+
+Encontrados na WORK-37 e deixados fora do escopo. Cada uma recebe um número quando for aberta.
+
+| Assunto | Tipo provável | Origem |
+|---|---|---|
+| Reauth do Gmail engolido no `getLabel`: o `GmailReauthRequiredException` é capturado em `GmailNotificationService.fetchInboxUnreadCount`, e o unread-summary devolve "conectado, 0 não lidos" por um ciclo, em vez do 401 `GMAIL_REAUTH_REQUIRED` | ajuste | revisor de correção, WORK-37 |
+| Chamada dupla do `/api/gmail/unread-summary` na carga inicial (2 GETs com 68 ms de diferença) | ajuste | teste visual, WORK-37 |
+| 401 do `/api/users/me` sai como erro no console da tela de login (checagem de sessão antes do login) | ajuste | teste visual, WORK-37 |

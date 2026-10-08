@@ -51,6 +51,7 @@ export type PagedThreadsResponse = {
 };
 
 export type UnreadSummary = {
+  connected: boolean;
   totalUnread: number;
   latestUnreadId: string | null;
   latestUnreadFrom: string | null;
